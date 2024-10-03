@@ -4,9 +4,9 @@ import java.util.Properties;
 /**
  * Skeleton Code for SWEN20003 Project 2, Semester 2, 2024
  * Please enter your name below
- * @author
+ * @author Janice wei
  */
-public class ShadowTaxi extends AbstractGame {
+ public class ShadowTaxi extends AbstractGame {
 
     private final Properties GAME_PROPS;
     private final Properties MESSAGE_PROPS;

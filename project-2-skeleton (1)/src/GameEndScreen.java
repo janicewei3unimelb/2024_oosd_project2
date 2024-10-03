@@ -2,7 +2,7 @@ import bagel.*;
 
 import java.util.*;
 
-public class GameEndScreen {
+public class GameEndScreen extends Screen {
 
     private final Image BACKGROUND_IMAGE;
 
@@ -51,6 +51,7 @@ public class GameEndScreen {
      * @param input The current mouse/keyboard input.
      * @return true if SPACE key is pressed, false otherwise.
      */
+    @Override
     public boolean update(Input input) {
         BACKGROUND_IMAGE.draw(Window.getWidth()/2.0, Window.getHeight()/2.0);
 

@@ -5,7 +5,7 @@ import java.util.Properties;
 /**
  * A class representing the home screen of the game.
  * */
-public class HomeScreen {
+public class HomeScreen extends Screen {
 
     private final Image BACKGROUND_IMAGE;
     private final String TITLE;
@@ -34,6 +34,7 @@ public class HomeScreen {
      * @param input The current mouse/keyboard input.
      * @return true if ENTER key is pressed, false otherwise.
      */
+    @Override
     public boolean update(Input input) {
         BACKGROUND_IMAGE.draw(Window.getWidth()/2.0, Window.getHeight()/2.0);
         TITLE_FONT.drawString(TITLE, Window.getWidth() / 2 - TITLE_FONT.getWidth(TITLE)/2, TITLE_Y);

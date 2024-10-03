@@ -4,11 +4,11 @@ import bagel.Keys;
 
 import java.util.Properties;
 
-public class TripEndFlag extends GameEntities{
+public class TripEndFlag extends GameEntity {
 
     private final Image IMAGE;
     private final int SPEED_Y;
-    private final float RADIUS;
+    private final double RADIUS;
     private int moveY;
 
     public TripEndFlag(int x, int y, Properties props) {
@@ -19,7 +19,7 @@ public class TripEndFlag extends GameEntities{
         this.moveY = 0;
     }
 
-    public float getRadius() {
+    public double getRadius() {
         return RADIUS;
     }
 

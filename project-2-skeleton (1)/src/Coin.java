@@ -4,11 +4,9 @@ import java.util.Properties;
 
 public class Coin extends PowerUp {
     private final Image IMAGE;
-    private int moveY;
 
     public Coin(int x, int y, double radius, int duration, Properties gameProps) {
         super(x, y, radius, duration, gameProps);
-        this.moveY = 0;
         this.IMAGE = new Image(gameProps.getProperty("gameObjects.coin.image"));
     }
 
@@ -17,14 +15,20 @@ public class Coin extends PowerUp {
         IMAGE.draw(this.getX(), this.getY());
     }
 
-    @Override
     /**
      * Check if the coin has collided with any PowerCollectable objects, and power will be collected by PowerCollectable
      * object that is collided with.
      */
     public void collide(Taxi taxi) {
         if(hasCollidedWith(taxi)) {
-            taxi.collectCoinPower(this);
+            taxi.getDriver().collectCoinPower(this);
+            setIsCollided();
+        }
+    }
+
+    public void collide(Driver driver) {
+        if (hasCollidedWith(driver)) {
+            driver.collectCoinPower(this);
             setIsCollided();
         }
     }
@@ -46,6 +50,7 @@ public class Coin extends PowerUp {
      * Once the collision happens, the coin active time will be increased.
      * @param input The current mouse/keyboard input.
      */
+    @Override
     public void update(Input input) {
         if(this.getIsCollided()) {
             this.setFramesActive(this.getFramesActive() + 1);
@@ -56,21 +61,6 @@ public class Coin extends PowerUp {
 
             move();
             draw();
-        }
-    }
-
-    /**
-     * Move the GameObject object in the y-direction based on the speedY attribute.
-     */
-    public void move() {
-        this.setY(this.getY() + this.getSpeedY() * moveY);
-    }
-
-    public void adjustToInputMovement(Input input) {
-        if (input.wasPressed(Keys.UP)) {
-            moveY = 1;
-        }  else if(input.wasReleased(Keys.UP)) {
-            moveY = 0;
         }
     }
 

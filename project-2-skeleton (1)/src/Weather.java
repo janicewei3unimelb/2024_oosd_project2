@@ -1,24 +1,24 @@
 public class Weather {
-    private String type;
-    private int startFrame;
-    private int endFrame;
+    private final String TYPE;
+    private final int STRAT_FRAME;
+    private final int END_FRAME;
 
 
     public Weather(String type, int startFrame, int endFrame) {
-        this.type = type;
-        this.startFrame = startFrame;
-        this.endFrame = endFrame;
+        this.TYPE = type;
+        this.STRAT_FRAME = startFrame;
+        this.END_FRAME = endFrame;
     }
 
     public String getType() {
-        return type;
+        return TYPE;
     }
 
     public int getStartFrame() {
-        return startFrame;
+        return STRAT_FRAME;
     }
 
     public int getEndFrame() {
-        return endFrame;
+        return END_FRAME;
     }
 }

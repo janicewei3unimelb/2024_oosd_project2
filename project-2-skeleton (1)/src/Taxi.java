@@ -1,43 +1,35 @@
 import bagel.*;
 
-import java.util.ArrayList;
 import java.util.Properties;
 
-public class Taxi extends GameEntities implements Damagable {
+public class Taxi extends DamageableGameEntity {
 
-    private double healthPoints;
-    private final double DAMAGE;
-    private boolean isInvincible;
-
-    private final double RADIUS;
     private final Image IMAGE;
     private final Image DAMAGEDIMAGE;
 
     private final int SPEEDX;
 
-    private Trip trip;
-    private ArrayList<Trip> trips;
-
     private boolean isMovingY;
     private boolean isMovingX;
 
-    private Coin coinPower;
-    private InvinciblePower invinciblePower;
+    private Driver driver;
 
-    public Taxi(int x, int y, Properties gameProps) {
-        super(x, y, gameProps);
-        this.RADIUS = Double.parseDouble(gameProps.getProperty("gameObjects.taxi.radius"));
+    public Taxi(int x, int y, double healthPoints, double damage, int timeout_move_speed,
+                double radius, Properties gameProps) {
+        super(x, y, healthPoints, damage, timeout_move_speed, radius, gameProps);
         this.IMAGE = new Image(gameProps.getProperty("gameObjects.taxi.image"));
         this.DAMAGEDIMAGE = new Image(gameProps.getProperty("gameObjects.taxi.damagedImage"));
 
-        this.healthPoints = this.HEALTH_UNIT * Double.parseDouble(gameProps.getProperty("gameObjects.taxi.health"));
-        this.DAMAGE = this.HEALTH_UNIT * Double.parseDouble(gameProps.getProperty("gameObjects.taxi.damage"));
-        this.isInvincible = false;
-
         this.SPEEDX = Integer.parseInt(gameProps.getProperty("gameObjects.taxi.speedX"));
 
-        trips = new ArrayList<Trip>();
+    }
 
+    public Driver getDriver() {
+        return this.driver;
+    }
+
+    public void setDriver(Driver newDriver) {
+        this.driver = newDriver;
     }
 
     public boolean isMovingY() {
@@ -47,8 +39,6 @@ public class Taxi extends GameEntities implements Damagable {
     public boolean isMovingX() {
         return isMovingX;
     }
-
-    public double getRadius() {return this.RADIUS; }
 
     @Override
     public void draw() {
@@ -60,56 +50,23 @@ public class Taxi extends GameEntities implements Damagable {
     }
 
     public void update(Input input) {
-        if (trip != null && coinPower != null) {
-            TravelPlan tp = trip.getPassenger().getTravelPlan();
-            int newPriority = tp.getPriority();
-            if(!tp.getCoinPowerApplied()) {
-                newPriority = coinPower.applyEffect(tp.getPriority());
-            }
-            if(newPriority < tp.getPriority()) {
-                tp.setCoinPowerApplied();
-            }
-            tp.setPriority(newPriority);
-        }
-
-        if(input != null) {
+        if (!this.isDestroyed()) {
             adjustToInputMovement(input);
-        }
+        } else {
 
-        if(trip != null && trip.hasReachedEnd()) {
-            getTrip().end();
         }
-
         this.draw();
 
-        // the flag of the current trip renders to the screen
-        if(trips.size() > 0) {
-            Trip lastTrip = trips.get(trips.size() - 1);
-            if(!lastTrip.isComplete()) {
-                lastTrip.getTripEndFlag().update(input);
-            }
-        }
     }
 
     @Override
     public void takeDamage(double damage) {
-        this.healthPoints -= damage;
+        updateHealthPoints(damage);
     }
 
     @Override
-    public boolean isDestroyed() {
-        return (healthPoints <= 0);
-    }
-
-    public void collectCoinPower(Coin coin) {
-        coinPower = coin;
-    }
-
-    public void collectInvinciblePower(InvinciblePower invinciblePower) {
-        this.invinciblePower = invinciblePower;
-    }
-
     public void adjustToInputMovement(Input input) {
+
         if (input.wasPressed(Keys.UP)) {
             isMovingY = true;
         }  else if(input.wasReleased(Keys.UP)) {
@@ -125,31 +82,4 @@ public class Taxi extends GameEntities implements Damagable {
         }
     }
 
-    public void setTrip(Trip trip) {
-        this.trip = trip;
-        if(trip != null) {
-            trips.add(trip);
-        }
-    }
-
-    public Trip getTrip() {
-        return this.trip;
-    }
-
-    public Trip getLastTrip() {
-        if(trips.size() <= 0) {
-            return null;
-        }
-        return trips.get(trips.size() - 1);
-    }
-
-    public double calculateTotalEarnings() {
-        double totalEarnings = 0;
-        for(Trip trip : trips) {
-            if (trip != null) {
-                totalEarnings += trip.getFee();
-            }
-        }
-        return totalEarnings;
-    }
 }

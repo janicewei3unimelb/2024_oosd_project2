@@ -11,15 +11,15 @@ public class Trip {
     private final Passenger PASSENGER;
     private final Properties PROPS;
     private final TripEndFlag TRIP_END_FLAG;
-    private final Taxi TAXI;
+    private final Driver DRIVER;
 
     private boolean isComplete;
     private double fee;
     private double penalty;
 
-    public Trip(Passenger passenger, Taxi taxi, Properties props) {
+    public Trip(Passenger passenger, Driver driver, Properties props) {
         this.PASSENGER = passenger;
-        this.TAXI = taxi;
+        this.DRIVER= driver;
         this.TRIP_END_FLAG = new TripEndFlag(passenger.getTravelPlan().getEndX(),
                 passenger.getTravelPlan().getEndY(),
                 props);
@@ -56,8 +56,8 @@ public class Trip {
      */
     public boolean hasReachedEnd() {
         // Taxi is stopped when it is not moving in any direction and has health > 0.
-        boolean isTaxiStopped = !TAXI.isMovingY() && !TAXI.isMovingX();
-        float currDistance = getCurrentDistance();
+        boolean isTaxiStopped = !DRIVER.getTaxi().isMovingY() && !DRIVER.getTaxi().isMovingX();
+        double currDistance = getCurrentDistance();
         boolean passedDropOff = hasPassedDropOff();
 
         // The trip is considered as reached end if the taxi is stopped and the distance between the passenger
@@ -78,8 +78,8 @@ public class Trip {
      * Calculate the current distance (Euclidean) between the passenger and the drop-off point.
      * @return The current distance between the passenger and the drop-off point.
      */
-    private float getCurrentDistance() {
-        return (float) Math.sqrt(Math.pow(TRIP_END_FLAG.getX() - PASSENGER.getX(), 2) +
+    private double getCurrentDistance() {
+        return Math.sqrt(Math.pow(TRIP_END_FLAG.getX() - PASSENGER.getX(), 2) +
                 Math.pow(TRIP_END_FLAG.getY() - PASSENGER.getY(), 2));
     }
 
@@ -89,7 +89,7 @@ public class Trip {
     public void end() {
         isComplete = true;
         PASSENGER.setIsGetInTaxi(null);
-        TAXI.setTrip(null);
+        DRIVER.setTrip(null);
         calculateFee();
     }
 

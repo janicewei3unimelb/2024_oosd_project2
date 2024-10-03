@@ -1,9 +1,11 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
+
 import bagel.*;
 
-public class GamePlayScreen {
+public class GamePlayScreen extends Screen {
     private final Properties GAME_PROPS;
     private final Properties MSG_PROPS;
 
@@ -11,6 +13,16 @@ public class GamePlayScreen {
     private double coinFramesActive;
     private double invincibleFramesActive;
     private final int MAX_FRAMES;
+
+    private static final int RANDOM_BOUND = 1000;
+    private static final int CAR_DIVISIBILITY = 200;
+    private static final int ENEMY_DIVISIBILITY = 400;
+    private static final int RANDOM_Y1 = -50;
+    private static final int RANDOM_Y2 = 768;
+
+    private double minPassengerHealth;
+    private static final int VEHICLE_TIMEOUT_SPEED = 1;
+    private static final int PERSON_TIMEOUT_SPEED = 2;
 
     // Weather condition management
     private final List<Weather> WEATHERCONDITIONS;
@@ -25,10 +37,13 @@ public class GamePlayScreen {
     private boolean savedData;
 
     private Taxi taxi;
+    private final List<Taxi> DAMAGED_TAXIS;
     private Driver driver;
     private final List<Passenger> PASSENGERS;
     private final List<Coin> COINS;
     private final List<InvinciblePower> INVINCIBLEPOWERS;
+    private final List<OtherCar> CARS;
+    private final List<EnemyCar> ENEMIES;
 
     // display text vars
     private final Font INFO_FONT;
@@ -54,13 +69,16 @@ public class GamePlayScreen {
         PASSENGERS = new ArrayList<>();
         COINS = new ArrayList<>();
         INVINCIBLEPOWERS = new ArrayList<>();
+        CARS = new ArrayList<>();
+        DAMAGED_TAXIS = new ArrayList<>();
+        ENEMIES = new ArrayList<>();
 
         ArrayList<String[]> lines = IOUtils.readCommaSeperatedFile(gameProps.getProperty("gamePlay.objectsFile"));
         populateGameObjects(lines);
 
         this.MAX_FRAMES = Integer.parseInt(gameProps.getProperty("gamePlay.maxFrames"));
 
-        this.TARGET = Float.parseFloat(gameProps.getProperty("gamePlay.target"));
+        this.TARGET = Double.parseDouble(gameProps.getProperty("gamePlay.target"));
 
         WEATHERCONDITIONS = new ArrayList<>();
         loadWeather(gameProps.getProperty("gamePlay.weatherFile"));
@@ -94,12 +112,26 @@ public class GamePlayScreen {
             String type = line[0];
             int x = Integer.parseInt(line[1]);
             int y = Integer.parseInt(line[2]);
+            double healthPoints;
+            double damage;
+            double radius;
             switch (type) {
                 case "TAXI":
-                    taxi = new Taxi(x, y, GAME_PROPS);
+                    healthPoints = DamageableGameEntity.getHealthUnit() *
+                            Double.parseDouble(GAME_PROPS.getProperty("gameObjects.taxi.health"));
+                    damage = DamageableGameEntity.getHealthUnit() *
+                            Double.parseDouble(GAME_PROPS.getProperty("gameObjects.taxi.damage"));
+                    radius = Double.parseDouble(GAME_PROPS.getProperty("gameObjects.taxi.radius"));
+                    taxi = new Taxi(x, y, healthPoints, damage, VEHICLE_TIMEOUT_SPEED, radius, GAME_PROPS);
                     break;
                 case "DRIVER":
-                    driver = new Driver(x, y, GAME_PROPS);
+                    healthPoints = DamageableGameEntity.getHealthUnit() *
+                            Double.parseDouble(GAME_PROPS.getProperty("gameObjects.driver.health"));
+                    damage = 0;
+                    radius = Double.parseDouble(GAME_PROPS.getProperty("gameObjects.driver.radius"));
+                    driver = new Driver(x, y, healthPoints, damage, PERSON_TIMEOUT_SPEED, radius, GAME_PROPS);
+                    driver.collectTaxi(taxi);
+                    taxi.setDriver(driver);
                     break;
                 case "COIN":
                     Coin newCoin = new Coin(x, y, Double.parseDouble(GAME_PROPS.getProperty("gameObjects.coin.radius")),
@@ -110,7 +142,18 @@ public class GamePlayScreen {
                     int priority = Integer.parseInt(line[3]);
                     int endX = Integer.parseInt(line[4]);
                     int yDistance = Integer.parseInt(line[5]);
-                    PASSENGERS.add(new Passenger(x, y, priority, endX, yDistance, GAME_PROPS));
+                    boolean withUmbrella;
+                    healthPoints = DamageableGameEntity.getHealthUnit() *
+                            Double.parseDouble(GAME_PROPS.getProperty("gameObjects.passenger.health"));
+                    damage = 0;
+                    radius = Double.parseDouble(GAME_PROPS.getProperty("gameObjects.passenger.radius"));
+                    if (Integer.parseInt(line[6]) == 0) {
+                        withUmbrella = false;
+                    } else {
+                        withUmbrella = true;
+                    }
+                    PASSENGERS.add(new Passenger(x, y, healthPoints, damage, PERSON_TIMEOUT_SPEED, radius,
+                            priority, endX, yDistance, withUmbrella, GAME_PROPS));
                     break;
                 case "INVINCIBLE_POWER":
                     InvinciblePower newPower = new InvinciblePower(x, y,
@@ -121,8 +164,9 @@ public class GamePlayScreen {
                     break;
             }
         }
+        minPassengerHealth = PASSENGERS.get(0).getHealthPoints();
     }
-
+    @Override
     public boolean update(Input input) {
         currFrame++;
         updateCurrentWeather();
@@ -130,18 +174,111 @@ public class GamePlayScreen {
         boolean moveUp = input.isDown(Keys.UP);
         background.updateBackground(currentWeather.getType(), moveUp);
 
+        // update passengers
+        updatePassengers(input);
+
+        // update taxis
+        updateTaxis(input);
+
+        // update driver
+        driver.update(input);
+        totalEarnings = driver.calculateTotalEarnings();
+
+        // update coin
+        updateCoins(input);
+
+        // update invincible powers
+        updateInvinciblePowers(input);
+
+        generateRandomCars();
+
+        // update other cars & enemy cars
+        updateCars(input);
+        updateEnemyCars(input);
+
+        displayInfo();
+
+        return isGameOver() || isLevelCompleted();
+    }
+
+    private void updatePassengers(Input input) {
+        boolean isRaining = currentWeather.getType().equals("RAINING");
         for(Passenger passenger: PASSENGERS) {
-            passenger.updateWithTaxi(input, taxi);
+            TravelPlan currPlan = passenger.getTravelPlan();
+            if (isRaining) {
+                currPlan.setPriority(1);
+            } else {
+                if (!passenger.getIsGetInTaxi()) {
+                    currPlan.setPriority(currPlan.getInitPriority());
+                }
+            }
+            passenger.update(input, taxi, driver);
         }
+    }
 
+    private void updateTaxis(Input input) {
+        if (DAMAGED_TAXIS.size() > 0) {
+            for (Taxi damagedOne: DAMAGED_TAXIS) {
+                damagedOne.update(input);
+            }
+        }
         taxi.update(input);
-        totalEarnings = taxi.calculateTotalEarnings();
+    }
 
-        if(COINS.size() > 0) {
+    // not finished draft
+    private void updateCars(Input input) {
+        if (CARS.size() > 0) {
+            for (OtherCar otherCar: CARS) {
+                otherCar.update(input);
+            }
+        }
+    }
+
+    // not finished draft
+    private void updateEnemyCars(Input input) {
+        if (ENEMIES.size() > 0) {
+            for (EnemyCar enemy: ENEMIES) {
+                enemy.update(input);
+                List<Fireball> fireballs = enemy.getFireBalls();
+                if (fireballs.size() > 0) {
+                    for (Fireball fireball: fireballs) {
+                        fireball.update(input);
+                    }
+                }
+            }
+        }
+    }
+
+    private void updateInvinciblePowers(Input input) {
+        if (INVINCIBLEPOWERS.size() > 0) {
+            int minFramesActive = INVINCIBLEPOWERS.get(0).getDuration();
+            for (InvinciblePower power: INVINCIBLEPOWERS) {
+                power.update(input);
+                if (driver.getIsInTaxi()) {
+                    power.collide(taxi);
+                } else {
+                    power.collide(driver);
+                }
+
+                int framesActive = power.getFramesActive();
+                if (power.getIsActive() && minFramesActive > framesActive) {
+                    minFramesActive = framesActive;
+                }
+            }
+            invincibleFramesActive = minFramesActive;
+        }
+    }
+
+    private void updateCoins(Input input) {
+        if (COINS.size() > 0) {
             int minFramesActive = COINS.get(0).getDuration();
             for(Coin coinPower: COINS) {
                 coinPower.update(input);
-                coinPower.collide(taxi);
+                if (driver.getIsInTaxi()) {
+                    coinPower.collide(taxi);
+                } else {
+                    coinPower.collide(driver);
+                }
 
                 // check if there's active coin and finding the coin with maximum ttl
                 int framesActive = coinPower.getFramesActive();
@@ -151,16 +288,38 @@ public class GamePlayScreen {
             }
             coinFramesActive = minFramesActive;
         }
-
-        generateRandomEntities();
-
-        displayInfo();
-
-        return isGameOver() || isLevelCompleted();
     }
 
-    private void generateRandomEntities() {
+    private void generateRandomCars() {
+        Random random = new Random();
+        int randomNumCar = random.nextInt(RANDOM_BOUND);
+        int randomNumEnemy = random.nextInt(RANDOM_BOUND);
+        int lanesX[] = {Integer.parseInt(GAME_PROPS.getProperty("roadLaneCenter1")),
+                Integer.parseInt(GAME_PROPS.getProperty("roadLaneCenter2")),
+                Integer.parseInt(GAME_PROPS.getProperty("roadLaneCenter3"))};
+        int x = lanesX[random.nextInt(lanesX.length)];
+        int y = random.nextBoolean() ? RANDOM_Y1 : RANDOM_Y2;
+        double healthPoints;
+        double damage;
+        double radius;
 
+        if (randomNumCar % CAR_DIVISIBILITY == 0) {
+            System.out.println("an othercar is generated");
+            healthPoints = DamageableGameEntity.getHealthUnit() *
+                    Double.parseDouble(GAME_PROPS.getProperty("gameObjects.otherCar.health"));
+            damage = DamageableGameEntity.getHealthUnit() *
+                    Double.parseDouble(GAME_PROPS.getProperty("gameObjects.otherCar.damage"));
+            radius = Double.parseDouble(GAME_PROPS.getProperty("gameObjects.otherCar.radius"));
+            CARS.add(new OtherCar(x, y, healthPoints, damage, VEHICLE_TIMEOUT_SPEED, radius, GAME_PROPS));
+        } else if (randomNumEnemy % ENEMY_DIVISIBILITY == 0) {
+            System.out.println("an enemy is generated");
+            healthPoints = DamageableGameEntity.getHealthUnit() *
+                    Double.parseDouble(GAME_PROPS.getProperty("gameObjects.enemyCar.health"));
+            damage = DamageableGameEntity.getHealthUnit() *
+                    Double.parseDouble(GAME_PROPS.getProperty("gameObjects.enemyCar.damage"));
+            radius = Double.parseDouble(GAME_PROPS.getProperty("gameObjects.enemyCar.radius"));
+            ENEMIES.add(new EnemyCar(x, y, healthPoints, damage, VEHICLE_TIMEOUT_SPEED, radius, GAME_PROPS));
+        }
     }
 
     public String getTotalEarnings() {
@@ -178,7 +337,7 @@ public class GamePlayScreen {
             INFO_FONT.drawString(String.valueOf(Math.round(coinFramesActive)), COIN_X, COIN_Y);
         }
 
-        Trip lastTrip = taxi.getLastTrip();
+        Trip lastTrip = driver.getLastTrip();
         if(lastTrip != null) {
             if(lastTrip.isComplete()) {
                 INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.completedTrip.title"), TRIP_INFO_X, TRIP_INFO_Y);
@@ -220,8 +379,9 @@ public class GamePlayScreen {
     }
 
     public boolean isGameOver() {
-        // Game is over if the current frame is greater than the max frames
-        boolean isGameOver = currFrame >= MAX_FRAMES;
+        // Game is over if any of the 4 conditions are met
+        boolean isGameOver = (currFrame >= MAX_FRAMES || driver.getHealthPoints() <= 0
+                || minPassengerHealth <= 0);
 
         if(currFrame >= MAX_FRAMES && !savedData) {
             savedData = true;

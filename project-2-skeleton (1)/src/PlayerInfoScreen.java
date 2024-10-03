@@ -6,7 +6,7 @@ import java.util.Properties;
 /**
  * The screen class which allows the player to enter their name.
  */
-public class PlayerInfoScreen{
+public class PlayerInfoScreen extends Screen {
 
     private final Image BACKGROUND_IMAGE;
     private final String PI_PLAYER_NAME;
@@ -41,6 +41,7 @@ public class PlayerInfoScreen{
      * @param input The current mouse/keyboard input.
      * @return true if ENTER key is pressed, false otherwise.
      */
+    @Override
     public boolean update(Input input) {
         BACKGROUND_IMAGE.draw(Window.getWidth()/2.0, Window.getHeight()/2.0);
 

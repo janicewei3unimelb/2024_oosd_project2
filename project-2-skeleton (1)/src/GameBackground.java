@@ -4,8 +4,8 @@ import bagel.Window;
 import java.util.Properties;
 
 public class GameBackground {
-    private final Image backgroundSunnyImage;
-    private final Image backgroundRainImage;
+    private final Image SUNNY_BACKGROUND;
+    private final Image RAINY_BACKGROUND;
 
     private int y1, y2;
     private final int X;
@@ -13,8 +13,8 @@ public class GameBackground {
     private static final int MAX_Y = 1152;
 
     public GameBackground(Properties gameProps) {
-        backgroundSunnyImage = new Image(gameProps.getProperty("backgroundImage.sunny"));
-        backgroundRainImage = new Image(gameProps.getProperty("backgroundImage.raining"));
+        SUNNY_BACKGROUND = new Image(gameProps.getProperty("backgroundImage.sunny"));
+        RAINY_BACKGROUND = new Image(gameProps.getProperty("backgroundImage.raining"));
         y1 = Integer.parseInt(gameProps.getProperty("window.height")) / 2;
         y2 = -1 * Integer.parseInt(gameProps.getProperty("window.height")) / 2;
         X = Integer.parseInt(gameProps.getProperty("window.width")) / 2;
@@ -22,7 +22,7 @@ public class GameBackground {
     }
 
     public void updateBackground(String weatherType, boolean moveUp) {
-        Image currentBackground = weatherType.equals("RAINING") ? backgroundRainImage : backgroundSunnyImage;
+        Image currentBackground = weatherType.equals("RAINING") ? RAINY_BACKGROUND : SUNNY_BACKGROUND;
         if (moveUp) {
             y1 += SPEED_Y;
             y2 += SPEED_Y;
