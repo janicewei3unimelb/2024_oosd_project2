@@ -62,6 +62,15 @@ public class GamePlayScreen extends Screen {
     private final int TRIP_INFO_OFFSET_2;
     private final int TRIP_INFO_OFFSET_3;
 
+    private final int TAXI_HEALTH_X;
+    private final int TAXI_HEALTH_Y;
+    private final int DRIVER_HEALTH_X;
+    private final int DRIVER_HEALTH_Y;
+    private final int PASSENGER_HEALTH_X;
+    private final int PASSENGER_HEALTH_Y;
+
+    private int LANES_X[];
+
     public GamePlayScreen(Properties gameProps, Properties msgProps, String playerName) {
         this.GAME_PROPS = gameProps;
         this.MSG_PROPS = msgProps;
@@ -103,6 +112,19 @@ public class GamePlayScreen extends Screen {
         TRIP_INFO_OFFSET_1 = 30;
         TRIP_INFO_OFFSET_2 = 60;
         TRIP_INFO_OFFSET_3 = 90;
+
+        // health points info
+        TAXI_HEALTH_X = Integer.parseInt(gameProps.getProperty("gamePlay.taxiHealth.x"));
+        TAXI_HEALTH_Y = Integer.parseInt(gameProps.getProperty("gamePlay.taxiHealth.y"));
+        DRIVER_HEALTH_X = Integer.parseInt(gameProps.getProperty("gamePlay.driverHealth.x"));
+        DRIVER_HEALTH_Y = Integer.parseInt(gameProps.getProperty("gamePlay.driverHealth.y"));
+        PASSENGER_HEALTH_X = Integer.parseInt(gameProps.getProperty("gamePlay.passengerHealth.x"));
+        PASSENGER_HEALTH_Y = Integer.parseInt(gameProps.getProperty("gamePlay.passengerHealth.y"));
+
+        int[] lanesX = {Integer.parseInt(GAME_PROPS.getProperty("roadLaneCenter1")),
+                Integer.parseInt(GAME_PROPS.getProperty("roadLaneCenter2")),
+                Integer.parseInt(GAME_PROPS.getProperty("roadLaneCenter3"))};
+        LANES_X = lanesX;
 
         this.PLAYER_NAME = playerName;
     }
@@ -174,30 +196,28 @@ public class GamePlayScreen extends Screen {
         boolean moveUp = input.isDown(Keys.UP);
         background.updateBackground(currentWeather.getType(), moveUp);
 
-        // update passengers
-        updatePassengers(input);
-
         // update taxis
         updateTaxis(input);
-
         // update driver
         driver.update(input);
         totalEarnings = driver.calculateTotalEarnings();
 
-        // update coin
-        updateCoins(input);
-
-        // update invincible powers
-        updateInvinciblePowers(input);
-
         generateRandomCars();
-
         // update other cars & enemy cars
         updateCars(input);
         updateEnemyCars(input);
 
-        displayInfo();
+        // update passengers
+        updatePassengers(input);
 
+
+        updateCoins(input);
+        updateInvinciblePowers(input);
+
+        handleOtherCarCollisions();
+        handleEnemyCollisions();
+
+        displayInfo();
         return isGameOver() || isLevelCompleted();
     }
 
@@ -205,12 +225,15 @@ public class GamePlayScreen extends Screen {
         boolean isRaining = currentWeather.getType().equals("RAINING");
         for(Passenger passenger: PASSENGERS) {
             TravelPlan currPlan = passenger.getTravelPlan();
-            if (isRaining) {
+            if (isRaining && !passenger.getHasUmbrella()) {
                 currPlan.setPriority(1);
-            } else {
+            } else if (!isRaining) {
                 if (!passenger.getIsGetInTaxi()) {
                     currPlan.setPriority(currPlan.getInitPriority());
                 }
+            }
+            if (passenger.getHealthPoints() < minPassengerHealth) {
+                minPassengerHealth = passenger.getHealthPoints();
             }
             passenger.update(input, taxi, driver);
         }
@@ -223,6 +246,30 @@ public class GamePlayScreen extends Screen {
             }
         }
         taxi.update(input);
+        if (taxi.isDestroyed()) {
+            DAMAGED_TAXIS.add(taxi);
+            // generate a random new taxi
+            generateNewTaxi();
+//            driver.ejectFromTaxi();
+//            if (driver.getTrip() != null) {
+//                driver.getTrip().getPassenger().ejectFromTaxi();
+//            }
+        }
+    }
+
+    private void generateNewTaxi() {
+        Random random = new Random();
+        int x = LANES_X[random.nextInt(LANES_X.length)];
+        int randomNumShift = 200;
+        int randomRange = 200;
+        int y = random.nextInt(randomRange + 1) + randomNumShift;
+        double healthPoints = DamageableGameEntity.getHealthUnit() *
+                Double.parseDouble(GAME_PROPS.getProperty("gameObjects.taxi.health"));
+        double damage = DamageableGameEntity.getHealthUnit() *
+                Double.parseDouble(GAME_PROPS.getProperty("gameObjects.taxi.damage"));
+        double radius = Double.parseDouble(GAME_PROPS.getProperty("gameObjects.taxi.radius"));
+        taxi = new Taxi(x, y, healthPoints, damage, VEHICLE_TIMEOUT_SPEED, radius, GAME_PROPS);
+        taxi.setDriver(driver);
     }
 
     // not finished draft
@@ -243,10 +290,192 @@ public class GamePlayScreen extends Screen {
                 if (fireballs.size() > 0) {
                     for (Fireball fireball: fireballs) {
                         fireball.update(input);
+                        handleFireBallCollisions(fireball, enemy);
                     }
                 }
             }
         }
+    }
+
+    private double calculateDistance(int x1, int y1, int x2, int y2) {
+        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+
+    private void handleOtherCarCollisions() {
+        boolean otherCarOnTop;
+        for (int i = 0; i < CARS.size(); i++) {
+            OtherCar car = CARS.get(i);
+            if (car.isDestroyed() || car.getCollisionTimeout() > 0) continue;
+            // first check collision with the taxi
+            if (calculateDistance(car.getX(), car.getY(), taxi.getX(), taxi.getY()) <
+                    (car.getRadius()) + taxi.getRadius()) {
+                otherCarOnTop = car.getY() < taxi.getY();
+                if (invincibleFramesActive <= 0 && taxi.getCollisionTimeout() <= 0) {
+                    taxi.takeDamage(car.getDamage(), !otherCarOnTop);
+                }
+                car.takeDamage(taxi.getDamage(), otherCarOnTop);
+            }
+            // check collision with the driver
+            if (!driver.getIsInTaxi() && calculateDistance(car.getX(), car.getY(), driver.getX(), driver.getY()) <
+                    (car.getRadius()) + driver.getRadius()) {
+                otherCarOnTop = car.getY() < driver.getY();
+                if (invincibleFramesActive <= 0 && driver.getCollisionTimeout() <= 0) {
+                    driver.takeDamage(car.getDamage(), !otherCarOnTop);
+                }
+                car.takeDamage(driver.getDamage(), otherCarOnTop);
+            }
+            // check collision with the passenger
+            if (driver.getTrip() != null && !driver.getIsInTaxi()) {
+                Passenger currPassenger = driver.getTrip().getPassenger();
+                if (calculateDistance(car.getX(), car.getY(), currPassenger.getX(), currPassenger.getY()) <
+                        (car.getRadius() + currPassenger.getRadius())) {
+                    otherCarOnTop = car.getY() < currPassenger.getY();
+                    if (currPassenger.getCollisionTimeout() <= 0) {
+                        currPassenger.takeDamage(car.getDamage(), !otherCarOnTop);
+                    }
+                    car.takeDamage(currPassenger.getDamage(), otherCarOnTop);
+                }
+            }
+            // check collision between otherCars
+            for (int j = i + 1; j < CARS.size(); j++) {
+                OtherCar carTwo = CARS.get(j);
+                if (carTwo.isDestroyed()) continue;
+                if (calculateDistance(car.getX(), car.getY(), carTwo.getX(), carTwo.getY()) <
+                        (car.getRadius()) + carTwo.getRadius()) {
+                    otherCarOnTop = car.getY() < carTwo.getY();
+                    if (carTwo.getCollisionTimeout() <= 0) {
+                        carTwo.takeDamage(car.getDamage(), !otherCarOnTop);
+                    }
+                    car.takeDamage(carTwo.getDamage(), otherCarOnTop);
+                }
+            }
+            // check collision with enemy cars
+            for (EnemyCar enemy: ENEMIES) {
+                if (enemy.isDestroyed()) continue;
+                if (calculateDistance(car.getX(), car.getY(), enemy.getX(), enemy.getY()) <
+                        (car.getRadius() + enemy.getRadius())) {
+                    otherCarOnTop = car.getY() < enemy.getY();
+                    if (enemy.getCollisionTimeout() <= 0) {
+                        enemy.takeDamage(car.getDamage(), !otherCarOnTop);
+                    }
+                    car.takeDamage(enemy.getDamage(), otherCarOnTop);
+                }
+            }
+        }
+    }
+
+    private void handleEnemyCollisions() {
+        boolean enemyOnTop;
+        for (int i = 0; i < ENEMIES.size(); i++) {
+            EnemyCar enemyCar = ENEMIES.get(i);
+            if (enemyCar.isDestroyed() || enemyCar.getCollisionTimeout() > 0) continue;
+            // check collision with taxi
+            if (calculateDistance(enemyCar.getX(), enemyCar.getY(), taxi.getX(), taxi.getY()) <
+                    (enemyCar.getRadius()) + taxi.getRadius()) {
+                enemyOnTop = enemyCar.getY() < taxi.getY();
+                if (invincibleFramesActive <= 0 && taxi.getCollisionTimeout() <= 0) {
+                    taxi.takeDamage(enemyCar.getDamage(), !enemyOnTop);
+                }
+                enemyCar.takeDamage(taxi.getDamage(), enemyOnTop);
+            }
+            // check collision with the driver
+            if (!driver.getIsInTaxi() && calculateDistance(enemyCar.getX(), enemyCar.getY(), driver.getX(),
+                    driver.getY()) < (enemyCar.getRadius()) + driver.getRadius()) {
+                enemyOnTop = enemyCar.getY() < driver.getY();
+                if (invincibleFramesActive <= 0 && driver.getCollisionTimeout() <= 0) {
+                    driver.takeDamage(enemyCar.getDamage(), !enemyOnTop);
+                }
+                enemyCar.takeDamage(driver.getDamage(), enemyOnTop);
+            }
+            // check collision with the passenger
+            if (driver.getTrip() != null && !driver.getIsInTaxi()) {
+                Passenger currPassenger = driver.getTrip().getPassenger();
+                if (calculateDistance(enemyCar.getX(), enemyCar.getY(), currPassenger.getX(), currPassenger.getY()) <
+                        (enemyCar.getRadius() + currPassenger.getRadius())) {
+                    enemyOnTop = enemyCar.getY() < currPassenger.getY();
+                    if (currPassenger.getCollisionTimeout() <= 0) {
+                        currPassenger.takeDamage(enemyCar.getDamage(), !enemyOnTop);
+                    }
+                    enemyCar.takeDamage(currPassenger.getDamage(), enemyOnTop);
+                }
+            }
+            // check collision with other enemyCars
+            for (int j = i + 1; j < ENEMIES.size(); j++) {
+                EnemyCar enemyTwo = ENEMIES.get(j);
+                if (enemyTwo.isDestroyed()) continue;
+                if (calculateDistance(enemyCar.getX(), enemyCar.getY(), enemyTwo.getX(), enemyTwo.getY()) <
+                        (enemyCar.getRadius() + enemyTwo.getRadius())) {
+                    enemyOnTop = enemyCar.getY() < enemyTwo.getY();
+                    if (enemyTwo.getCollisionTimeout() <= 0) {
+                        enemyTwo.takeDamage(enemyCar.getDamage(), !enemyOnTop);
+                    }
+                    enemyCar.takeDamage(enemyTwo.getDamage(), enemyOnTop);
+                }
+            }
+        }
+    }
+
+    private void handleFireBallCollisions(Fireball fireball, EnemyCar producer) {
+        // check taxi's collision
+        if (fireball.getIsCollided()) {
+            return;
+        } else {
+            boolean objectOnTop;
+            // check collision with Taxi
+            if (calculateDistance(fireball.getX(), fireball.getY(), taxi.getX(), taxi.getY()) <
+                    (fireball.getRadius()) + taxi.getRadius()) {
+                objectOnTop = taxi.getY() < fireball.getY();
+                fireball.setIsCollided();
+                if (taxi.getCollisionTimeout() <= 0) {
+                    taxi.takeDamage(fireball.getDamage(), objectOnTop);
+                }
+            }
+            // check collision with Driver
+            if (calculateDistance(fireball.getX(), fireball.getY(), driver.getX(), driver.getY()) <
+                    (fireball.getRadius() + driver.getRadius()) && !driver.getIsInTaxi()) {
+                objectOnTop = driver.getY() < fireball.getY();
+                fireball.setIsCollided();
+                if (driver.getCollisionTimeout() <= 0) {
+                    driver.takeDamage(fireball.getDamage(), objectOnTop);
+                }
+            }
+            // check collision with Passenger
+            if (driver.getTrip() != null && !driver.getIsInTaxi()) {
+                Passenger currPassenger = driver.getTrip().getPassenger();
+                if (calculateDistance(fireball.getX(), fireball.getY(), currPassenger.getX(), currPassenger.getY()) <
+                        (fireball.getRadius() + currPassenger.getRadius())) {
+                    objectOnTop = currPassenger.getY() < fireball.getY();
+                    fireball.setIsCollided();
+                    if (currPassenger.getCollisionTimeout() <= 0) {
+                        currPassenger.takeDamage(fireball.getDamage(), objectOnTop);
+                    }
+                }
+            }
+            // check collision with other cars
+            for (OtherCar car: CARS) {
+                if (calculateDistance(car.getX(), car.getY(), fireball.getX(), fireball.getY()) <
+                        (fireball.getRadius() + car.getRadius())) {
+                    objectOnTop = car.getY() < fireball.getY();
+                    fireball.setIsCollided();
+                    if (car.getCollisionTimeout() <= 0) {
+                        car.takeDamage(fireball.getDamage(), objectOnTop);
+                    }
+                }
+            }
+            // check collision with other enemy cars except its producer
+            for (EnemyCar enemy: ENEMIES) {
+                if (enemy == producer) continue;
+                if (calculateDistance(enemy.getX(), enemy.getY(), fireball.getX(), fireball.getY()) <
+                        (fireball.getRadius() + enemy.getRadius())) {
+                    objectOnTop = enemy.getY() < fireball.getY();
+                    fireball.setIsCollided();
+                    if (enemy.getCollisionTimeout() <= 0) {
+                        enemy.takeDamage(fireball.getDamage(), objectOnTop);
+                    }
+                }
+            }
+        }
+
     }
 
     private void updateInvinciblePowers(Input input) {
@@ -265,7 +494,11 @@ public class GamePlayScreen extends Screen {
                     minFramesActive = framesActive;
                 }
             }
-            invincibleFramesActive = minFramesActive;
+            if (minFramesActive < INVINCIBLEPOWERS.get(0).getDuration()) {
+                invincibleFramesActive = minFramesActive;
+            } else {
+                invincibleFramesActive = 0;
+            }
         }
     }
 
@@ -294,10 +527,7 @@ public class GamePlayScreen extends Screen {
         Random random = new Random();
         int randomNumCar = random.nextInt(RANDOM_BOUND);
         int randomNumEnemy = random.nextInt(RANDOM_BOUND);
-        int lanesX[] = {Integer.parseInt(GAME_PROPS.getProperty("roadLaneCenter1")),
-                Integer.parseInt(GAME_PROPS.getProperty("roadLaneCenter2")),
-                Integer.parseInt(GAME_PROPS.getProperty("roadLaneCenter3"))};
-        int x = lanesX[random.nextInt(lanesX.length)];
+        int x = LANES_X[random.nextInt(LANES_X.length)];
         int y = random.nextBoolean() ? RANDOM_Y1 : RANDOM_Y2;
         double healthPoints;
         double damage;
@@ -337,12 +567,24 @@ public class GamePlayScreen extends Screen {
             INFO_FONT.drawString(String.valueOf(Math.round(coinFramesActive)), COIN_X, COIN_Y);
         }
 
+        // testing
+        INFO_FONT.drawString(String.valueOf(Math.round(invincibleFramesActive)), COIN_X + 50, COIN_Y +300);
+        // render health points
+        INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.taxiHealth") + taxi.getHealthPoints(),
+                TAXI_HEALTH_X, TAXI_HEALTH_Y);
+        INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.driverHealth") + driver.getHealthPoints(),
+                DRIVER_HEALTH_X, DRIVER_HEALTH_Y);
+
         Trip lastTrip = driver.getLastTrip();
         if(lastTrip != null) {
             if(lastTrip.isComplete()) {
                 INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.completedTrip.title"), TRIP_INFO_X, TRIP_INFO_Y);
+                INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.passengerHealth") + minPassengerHealth,
+                        PASSENGER_HEALTH_X, PASSENGER_HEALTH_Y);
             } else {
                 INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.onGoingTrip.title"), TRIP_INFO_X, TRIP_INFO_Y);
+                INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.passengerHealth") +
+                        lastTrip.getPassenger().getHealthPoints(), PASSENGER_HEALTH_X, PASSENGER_HEALTH_Y);
             }
             INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.trip.expectedEarning")
                     + lastTrip.getPassenger().getTravelPlan().getExpectedFee(), TRIP_INFO_X, TRIP_INFO_Y
@@ -354,6 +596,9 @@ public class GamePlayScreen extends Screen {
                 INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.trip.penalty") + String.format("%.02f",
                         lastTrip.getPenalty()), TRIP_INFO_X, TRIP_INFO_Y + TRIP_INFO_OFFSET_3);
             }
+        } else {
+            INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.passengerHealth") + minPassengerHealth,
+                    PASSENGER_HEALTH_X, PASSENGER_HEALTH_Y);
         }
     }
 
