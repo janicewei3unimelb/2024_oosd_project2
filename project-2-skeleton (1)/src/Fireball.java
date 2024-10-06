@@ -6,14 +6,31 @@ public class Fireball extends GameEntity {
     private final Image IMAGE;
     private boolean isCollided = false;
     private final int SPEED;
+    private final double RADIUS;
+    private final double DAMAGE;
 
     public Fireball(int x, int y, Properties gameProps) {
         super(x, y, gameProps);
         IMAGE = new Image(gameProps.getProperty("gameObjects.fireball.image"));
         SPEED = Integer.parseInt(gameProps.getProperty("gameObjects.fireball.shootSpeedY"));
+        RADIUS = Double.parseDouble(gameProps.getProperty("gameObjects.fireball.radius"));
+        DAMAGE = Double.parseDouble(gameProps.getProperty("gameObjects.enemyCar.damage")) *
+                DamageableGameEntity.getHealthUnit();
     }
 
-    public void setIscollided() {
+    public double getDamage() {
+        return this.DAMAGE;
+    }
+
+    public double getRadius() {
+        return this.RADIUS;
+    }
+
+    public boolean getIsCollided() {
+        return this.isCollided;
+    }
+
+    public void setIsCollided() {
         this.isCollided = true;
     }
 
@@ -38,6 +55,8 @@ public class Fireball extends GameEntity {
             adjustToInputMovement(input);
             move();
             draw();
+        } else {
+            return;
         }
     }
 }

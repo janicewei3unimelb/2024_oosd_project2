@@ -7,6 +7,7 @@ public abstract class GameEntity {
     private int y;
     private final Properties GAME_PROPS;
     private final int SCROLL_SPEED_Y;
+    private boolean driverIsInTaxi = true;
 
     public GameEntity(int x, int y, Properties gameProps) {
         this.x = x;
@@ -15,8 +16,12 @@ public abstract class GameEntity {
         SCROLL_SPEED_Y = Integer.parseInt(gameProps.getProperty("gameObjects.taxi.speedY"));
     }
 
-    public int getScollSpeedY() {
-        return this.SCROLL_SPEED_Y;
+    public boolean getDriverIsInTaxi() {
+        return this.driverIsInTaxi;
+    }
+
+    public void setDriverIsInTaxi(boolean update) {
+        this.driverIsInTaxi = update;
     }
 
     public Properties getGameProps() {

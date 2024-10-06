@@ -8,7 +8,6 @@ public abstract class DamageableGameEntity extends GameEntity {
     private static final int HEALTH_UNIT = 100;
     private static final int MAX_TIMEOUTFRAMES = 200;
     private static final int MOVE_AWAY_TIMEOUTFRAMES = 10;
-
     private double healthPoints;
     private int collisionTimeout = 0;
     private final double DAMAGE;
@@ -24,14 +23,42 @@ public abstract class DamageableGameEntity extends GameEntity {
         this.RADIUS = radius;
     }
 
-    public double getRadius() {return this.RADIUS; }
+    public void showCollisionEffect(boolean isOnTop) {
+        if (isOnTop) {
+            this.setY(this.getY() - this.getMoveAwaySpeed());
+        } else {
+            this.setY(this.getY() + this.getMoveAwaySpeed());
+        }
+    }
 
-    public boolean isDestroyed() {
-        return this.healthPoints <= 0;
+    public int getMoveAwaySpeed() {
+        return this.TIMEOUT_MOVE_SPEED;
+    }
+
+    public boolean getCollisionOnTop() {
+        return this.collisionOnTop;
     }
 
     public void setCollisionOnTop(boolean result) {
         this.collisionOnTop = result;
+    }
+
+    public int getMoveAwayTimeoutframes() {
+        return this.MOVE_AWAY_TIMEOUTFRAMES;
+    }
+
+    public int getMaxTimeoutframes (){
+        return this.MAX_TIMEOUTFRAMES;
+    }
+
+    public double getRadius() {return this.RADIUS; }
+
+    public double getDamage() {
+        return this.DAMAGE;
+    }
+
+    public boolean isDestroyed() {
+        return this.healthPoints <= 0;
     }
 
     public void updateHealthPoints(double damage) {
@@ -54,5 +81,5 @@ public abstract class DamageableGameEntity extends GameEntity {
         return HEALTH_UNIT;
     }
 
-    public abstract void takeDamage(double damage);
+    public abstract void takeDamage(double damage, boolean onTopOfCollision);
 }

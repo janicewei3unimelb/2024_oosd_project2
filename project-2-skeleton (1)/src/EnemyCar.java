@@ -22,8 +22,15 @@ public class EnemyCar extends DamageableGameEntity {
     }
 
     @Override
-    public void takeDamage(double damage) {
+    public void takeDamage(double damage, boolean onTop) {
+        double prevHealthPoints = this.getHealthPoints();
+        updateHealthPoints(damage);
 
+        if (this.getHealthPoints() < prevHealthPoints) {
+            // there is a collision effect
+            this.setCollisionTimeout(this.getCollisionTimeout() + 1);
+            this.setCollisionOnTop(onTop);
+        }
     }
 
     @Override
@@ -34,21 +41,28 @@ public class EnemyCar extends DamageableGameEntity {
     @Override
     public void adjustToInputMovement(Input input) {
         if (input.wasPressed(Keys.UP)) {
-            this.setY(this.getY() + this.getScollSpeedY());
+            this.setY(this.getY() + this.getScrollSpeedY());
         }
     }
 
     public void update(Input input) {
-        if (this.getHealthPoints() > 0) {
+        if (this.getCollisionTimeout() >= getMaxTimeoutframes()) {
+            this.setCollisionTimeout(0);
+        }
+        if (!this.isDestroyed()) {
             generateRandomFireballs();
             if (this.getCollisionTimeout() > 0) {
-                this.setCollisionTimeout(this.getCollisionTimeout() - 1);
-                // Add logic for moving away during the first 10 frames
+                this.setCollisionTimeout(this.getCollisionTimeout() + 1);
+                if (this.getCollisionTimeout() < this.getMoveAwayTimeoutframes()) {
+                    showCollisionEffect(this.getCollisionOnTop());
+                }
             } else {
-                adjustToInputMovement(input);
                 this.setY(this.getY() - speed_y);
             }
+            adjustToInputMovement(input);
             draw();
+        } else {
+            return;
         }
     }
 

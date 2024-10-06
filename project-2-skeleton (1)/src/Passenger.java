@@ -58,7 +58,7 @@ public class Passenger extends DamageableGameEntity {
 
 
     @Override
-    public void takeDamage(double damage) {
+    public void takeDamage(double damage, boolean onTop) {
 
     }
 
@@ -98,9 +98,7 @@ public class Passenger extends DamageableGameEntity {
                 trip = new Trip(this, driver, this.getGameProps());
                 driver.setTrip(trip);
             }
-
             move(taxi);
-            draw();
 
         } else if(!isGetInTaxi && trip != null && trip.isComplete()) {
             move(taxi);
@@ -124,7 +122,7 @@ public class Passenger extends DamageableGameEntity {
      */
     @Override
     public void adjustToInputMovement(Input input) {
-        if (input.wasPressed(Keys.UP)) {
+        if (input.isDown(Keys.UP)) {
             moveY = 1;
         }  else if(input.wasReleased(Keys.UP)) {
             moveY = 0;
@@ -148,16 +146,14 @@ public class Passenger extends DamageableGameEntity {
             // (That is when taxi is stopped with not having a trip and adjacent to the passenger and the passenger
             // hasn't initiated the trip yet.)
             walkXDirectionObj(taxi.getX());
-            System.out.println("walk Direction X: " + walkDirectionX);
             walkYDirectionObj(taxi.getY());
-            System.out.println("walk Direction Y: " + walkDirectionY);
             walk();
         }
     }
 
     private void move() {
 
-        this.setY(this.getY() + this.getScollSpeedY() * moveY);
+        this.setY(this.getY() + this.getScrollSpeedY() * moveY);
     }
 
     private void walk() {

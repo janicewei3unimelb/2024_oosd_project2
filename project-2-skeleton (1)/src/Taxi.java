@@ -50,24 +50,43 @@ public class Taxi extends DamageableGameEntity {
     }
 
     public void update(Input input) {
-        if (!this.isDestroyed()) {
-            adjustToInputMovement(input);
-        } else {
+        if (this.getCollisionTimeout() >= this.getMaxTimeoutframes()) {
+            this.setCollisionTimeout(0);
+        }
+        if (this.getCollisionTimeout() > 0) {
+            this.setCollisionTimeout(this.getCollisionTimeout() + 1);
+        }
 
+        if (this.isDestroyed()) {
+            moveAway(input);
+        } else if (!this.isDestroyed() && this.getDriver().getDriverIsInTaxi() && this.getCollisionTimeout() <= 0) {
+            adjustToInputMovement(input);
+        } else if(!this.isDestroyed() && this.getCollisionTimeout() > 0 && this.getCollisionTimeout() <
+                this.getMoveAwayTimeoutframes()) {
+            showCollisionEffect(this.getCollisionOnTop());
+        } else if (!this.isDestroyed() && !this.getDriver().getDriverIsInTaxi()) {
+            moveAway(input);
         }
         this.draw();
+    }
 
+    public void moveAway(Input input) {
+        if (input.isDown(Keys.UP)) {
+            this.setY(this.getY() + this.getScrollSpeedY());
+        }
     }
 
     @Override
-    public void takeDamage(double damage) {
+    public void takeDamage(double damage, boolean onTop) {
         updateHealthPoints(damage);
+        this.setCollisionTimeout(this.getCollisionTimeout() + 1);
+        this.setCollisionOnTop(onTop);
     }
 
     @Override
     public void adjustToInputMovement(Input input) {
 
-        if (input.wasPressed(Keys.UP)) {
+        if (input.isDown(Keys.UP)) {
             isMovingY = true;
         }  else if(input.wasReleased(Keys.UP)) {
             isMovingY = false;

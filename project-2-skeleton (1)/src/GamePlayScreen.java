@@ -240,21 +240,22 @@ public class GamePlayScreen extends Screen {
     }
 
     private void updateTaxis(Input input) {
+        if (taxi.isDestroyed()) {
+            DAMAGED_TAXIS.add(taxi);
+            // generate a random new taxi
+            generateNewTaxi();
+            driver.ejectFromTaxi();
+            driver.collectTaxi(taxi);
+//            if (driver.getTrip() != null) {
+//                driver.getTrip().getPassenger().ejectFromTaxi();
+//            }
+        }
         if (DAMAGED_TAXIS.size() > 0) {
             for (Taxi damagedOne: DAMAGED_TAXIS) {
                 damagedOne.update(input);
             }
         }
         taxi.update(input);
-        if (taxi.isDestroyed()) {
-            DAMAGED_TAXIS.add(taxi);
-            // generate a random new taxi
-            generateNewTaxi();
-//            driver.ejectFromTaxi();
-//            if (driver.getTrip() != null) {
-//                driver.getTrip().getPassenger().ejectFromTaxi();
-//            }
-        }
     }
 
     private void generateNewTaxi() {
@@ -270,6 +271,7 @@ public class GamePlayScreen extends Screen {
         double radius = Double.parseDouble(GAME_PROPS.getProperty("gameObjects.taxi.radius"));
         taxi = new Taxi(x, y, healthPoints, damage, VEHICLE_TIMEOUT_SPEED, radius, GAME_PROPS);
         taxi.setDriver(driver);
+
     }
 
     // not finished draft
@@ -316,7 +318,7 @@ public class GamePlayScreen extends Screen {
                 car.takeDamage(taxi.getDamage(), otherCarOnTop);
             }
             // check collision with the driver
-            if (!driver.getIsInTaxi() && calculateDistance(car.getX(), car.getY(), driver.getX(), driver.getY()) <
+            if (!driver.getDriverIsInTaxi() && calculateDistance(car.getX(), car.getY(), driver.getX(), driver.getY()) <
                     (car.getRadius()) + driver.getRadius()) {
                 otherCarOnTop = car.getY() < driver.getY();
                 if (invincibleFramesActive <= 0 && driver.getCollisionTimeout() <= 0) {
@@ -325,7 +327,7 @@ public class GamePlayScreen extends Screen {
                 car.takeDamage(driver.getDamage(), otherCarOnTop);
             }
             // check collision with the passenger
-            if (driver.getTrip() != null && !driver.getIsInTaxi()) {
+            if (driver.getTrip() != null && !driver.getDriverIsInTaxi()) {
                 Passenger currPassenger = driver.getTrip().getPassenger();
                 if (calculateDistance(car.getX(), car.getY(), currPassenger.getX(), currPassenger.getY()) <
                         (car.getRadius() + currPassenger.getRadius())) {
@@ -379,7 +381,7 @@ public class GamePlayScreen extends Screen {
                 enemyCar.takeDamage(taxi.getDamage(), enemyOnTop);
             }
             // check collision with the driver
-            if (!driver.getIsInTaxi() && calculateDistance(enemyCar.getX(), enemyCar.getY(), driver.getX(),
+            if (!driver.getDriverIsInTaxi() && calculateDistance(enemyCar.getX(), enemyCar.getY(), driver.getX(),
                     driver.getY()) < (enemyCar.getRadius()) + driver.getRadius()) {
                 enemyOnTop = enemyCar.getY() < driver.getY();
                 if (invincibleFramesActive <= 0 && driver.getCollisionTimeout() <= 0) {
@@ -388,7 +390,7 @@ public class GamePlayScreen extends Screen {
                 enemyCar.takeDamage(driver.getDamage(), enemyOnTop);
             }
             // check collision with the passenger
-            if (driver.getTrip() != null && !driver.getIsInTaxi()) {
+            if (driver.getTrip() != null && !driver.getDriverIsInTaxi()) {
                 Passenger currPassenger = driver.getTrip().getPassenger();
                 if (calculateDistance(enemyCar.getX(), enemyCar.getY(), currPassenger.getX(), currPassenger.getY()) <
                         (enemyCar.getRadius() + currPassenger.getRadius())) {
@@ -426,21 +428,21 @@ public class GamePlayScreen extends Screen {
                     (fireball.getRadius()) + taxi.getRadius()) {
                 objectOnTop = taxi.getY() < fireball.getY();
                 fireball.setIsCollided();
-                if (taxi.getCollisionTimeout() <= 0) {
+                if (taxi.getCollisionTimeout() <= 0 && invincibleFramesActive <= 0) {
                     taxi.takeDamage(fireball.getDamage(), objectOnTop);
                 }
             }
             // check collision with Driver
             if (calculateDistance(fireball.getX(), fireball.getY(), driver.getX(), driver.getY()) <
-                    (fireball.getRadius() + driver.getRadius()) && !driver.getIsInTaxi()) {
+                    (fireball.getRadius() + driver.getRadius()) && !driver.getDriverIsInTaxi()) {
                 objectOnTop = driver.getY() < fireball.getY();
                 fireball.setIsCollided();
-                if (driver.getCollisionTimeout() <= 0) {
+                if (driver.getCollisionTimeout() <= 0 && invincibleFramesActive <= 0) {
                     driver.takeDamage(fireball.getDamage(), objectOnTop);
                 }
             }
             // check collision with Passenger
-            if (driver.getTrip() != null && !driver.getIsInTaxi()) {
+            if (driver.getTrip() != null && !driver.getDriverIsInTaxi()) {
                 Passenger currPassenger = driver.getTrip().getPassenger();
                 if (calculateDistance(fireball.getX(), fireball.getY(), currPassenger.getX(), currPassenger.getY()) <
                         (fireball.getRadius() + currPassenger.getRadius())) {
@@ -475,7 +477,6 @@ public class GamePlayScreen extends Screen {
                 }
             }
         }
-
     }
 
     private void updateInvinciblePowers(Input input) {
@@ -483,7 +484,7 @@ public class GamePlayScreen extends Screen {
             int minFramesActive = INVINCIBLEPOWERS.get(0).getDuration();
             for (InvinciblePower power: INVINCIBLEPOWERS) {
                 power.update(input);
-                if (driver.getIsInTaxi()) {
+                if (driver.getDriverIsInTaxi()) {
                     power.collide(taxi);
                 } else {
                     power.collide(driver);
@@ -507,7 +508,7 @@ public class GamePlayScreen extends Screen {
             int minFramesActive = COINS.get(0).getDuration();
             for(Coin coinPower: COINS) {
                 coinPower.update(input);
-                if (driver.getIsInTaxi()) {
+                if (driver.getDriverIsInTaxi()) {
                     coinPower.collide(taxi);
                 } else {
                     coinPower.collide(driver);
@@ -534,7 +535,6 @@ public class GamePlayScreen extends Screen {
         double radius;
 
         if (randomNumCar % CAR_DIVISIBILITY == 0) {
-            System.out.println("an othercar is generated");
             healthPoints = DamageableGameEntity.getHealthUnit() *
                     Double.parseDouble(GAME_PROPS.getProperty("gameObjects.otherCar.health"));
             damage = DamageableGameEntity.getHealthUnit() *
@@ -542,7 +542,6 @@ public class GamePlayScreen extends Screen {
             radius = Double.parseDouble(GAME_PROPS.getProperty("gameObjects.otherCar.radius"));
             CARS.add(new OtherCar(x, y, healthPoints, damage, VEHICLE_TIMEOUT_SPEED, radius, GAME_PROPS));
         } else if (randomNumEnemy % ENEMY_DIVISIBILITY == 0) {
-            System.out.println("an enemy is generated");
             healthPoints = DamageableGameEntity.getHealthUnit() *
                     Double.parseDouble(GAME_PROPS.getProperty("gameObjects.enemyCar.health"));
             damage = DamageableGameEntity.getHealthUnit() *

@@ -35,6 +35,7 @@ public class GameBackground {
                 y2 = y1 - Window.getHeight();
             }
         }
+
         // Render both backgrounds
         render(currentBackground, y1);
         render(currentBackground, y2);
