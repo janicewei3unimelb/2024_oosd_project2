@@ -66,7 +66,6 @@ public abstract class PowerUp extends GameEntity {
         this.setY(this.getY() + this.getSpeedY() * moveY);
     }
 
-    @Override
     public void adjustToInputMovement(Input input) {
         if (input.wasPressed(Keys.UP)) {
             moveY = 1;
