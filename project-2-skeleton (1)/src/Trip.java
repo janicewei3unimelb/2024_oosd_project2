@@ -63,7 +63,8 @@ public class Trip {
         // The trip is considered as reached end if the taxi is stopped and the distance between the passenger
         // and the drop-off point is less than the radius of the drop-off point.
         // Or if the passenger has passed the drop-off point and the taxi is stopped.
-        return (currDistance <= TRIP_END_FLAG.getRadius() && isTaxiStopped) || (passedDropOff && isTaxiStopped);
+        return ((currDistance <= TRIP_END_FLAG.getRadius() && isTaxiStopped) || (passedDropOff && isTaxiStopped)) &&
+                DRIVER.getDriverIsInTaxi();
     }
 
     /**
@@ -88,7 +89,7 @@ public class Trip {
      */
     public void end() {
         isComplete = true;
-        PASSENGER.setIsGetInTaxi(null);
+        PASSENGER.setIsGetInTaxi(false);
         DRIVER.setTrip(null);
         calculateFee();
     }
