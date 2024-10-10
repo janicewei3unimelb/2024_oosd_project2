@@ -21,6 +21,7 @@ public class GamePlayScreen extends Screen {
     private static final int RANDOM_Y2 = 768;
 
     private double minPassengerHealth;
+    private int passengerBloodFramesActive;
     private static final int VEHICLE_TIMEOUT_SPEED = 1;
     private static final int PERSON_TIMEOUT_SPEED = 2;
 
@@ -196,20 +197,16 @@ public class GamePlayScreen extends Screen {
         boolean moveUp = input.isDown(Keys.UP);
         background.updateBackground(currentWeather.getType(), moveUp);
 
-        // update taxis
+
         updateTaxis(input);
-        // update driver
+        updatePassengers(input);
+
         driver.update(input);
         totalEarnings = driver.calculateTotalEarnings();
 
         generateRandomCars();
-        // update other cars & enemy cars
         updateCars(input);
         updateEnemyCars(input);
-
-        // update passengers
-        updatePassengers(input);
-
 
         updateCoins(input);
         updateInvinciblePowers(input);
@@ -234,6 +231,7 @@ public class GamePlayScreen extends Screen {
             }
             if (passenger.getHealthPoints() < minPassengerHealth) {
                 minPassengerHealth = passenger.getHealthPoints();
+                passengerBloodFramesActive = passenger.getPassengersBlood().getFramesActive();
             }
             passenger.update(input, taxi, driver);
         }
@@ -241,14 +239,15 @@ public class GamePlayScreen extends Screen {
 
     private void updateTaxis(Input input) {
         if (taxi.isDestroyed()) {
+            Taxi prevTaxi = taxi;
             DAMAGED_TAXIS.add(taxi);
             // generate a random new taxi
             generateNewTaxi();
             driver.ejectFromTaxi();
             driver.collectTaxi(taxi);
-//            if (driver.getTrip() != null) {
-//                driver.getTrip().getPassenger().ejectFromTaxi();
-//            }
+            if (driver.getTrip() != null) {
+                driver.getTrip().getPassenger().ejectFromTaxi(prevTaxi);
+            }
         }
         if (DAMAGED_TAXIS.size() > 0) {
             for (Taxi damagedOne: DAMAGED_TAXIS) {
@@ -312,7 +311,8 @@ public class GamePlayScreen extends Screen {
             if (calculateDistance(car.getX(), car.getY(), taxi.getX(), taxi.getY()) <
                     (car.getRadius()) + taxi.getRadius()) {
                 otherCarOnTop = car.getY() < taxi.getY();
-                if (invincibleFramesActive <= 0 && taxi.getCollisionTimeout() <= 0) {
+                if ((invincibleFramesActive <= 0 || (invincibleFramesActive > 0 && !taxi.getDriverIsInTaxi()))
+                        && taxi.getCollisionTimeout() <= 0) {
                     taxi.takeDamage(car.getDamage(), !otherCarOnTop);
                 }
                 car.takeDamage(taxi.getDamage(), otherCarOnTop);
@@ -375,7 +375,8 @@ public class GamePlayScreen extends Screen {
             if (calculateDistance(enemyCar.getX(), enemyCar.getY(), taxi.getX(), taxi.getY()) <
                     (enemyCar.getRadius()) + taxi.getRadius()) {
                 enemyOnTop = enemyCar.getY() < taxi.getY();
-                if (invincibleFramesActive <= 0 && taxi.getCollisionTimeout() <= 0) {
+                if ((invincibleFramesActive <= 0 || (invincibleFramesActive > 0 && !taxi.getDriverIsInTaxi()))
+                        && taxi.getCollisionTimeout() <= 0) {
                     taxi.takeDamage(enemyCar.getDamage(), !enemyOnTop);
                 }
                 enemyCar.takeDamage(taxi.getDamage(), enemyOnTop);
@@ -428,7 +429,8 @@ public class GamePlayScreen extends Screen {
                     (fireball.getRadius()) + taxi.getRadius()) {
                 objectOnTop = taxi.getY() < fireball.getY();
                 fireball.setIsCollided();
-                if (taxi.getCollisionTimeout() <= 0 && invincibleFramesActive <= 0) {
+                if ((invincibleFramesActive <= 0 || (invincibleFramesActive > 0 && !taxi.getDriverIsInTaxi()))
+                        && taxi.getCollisionTimeout() <= 0) {
                     taxi.takeDamage(fireball.getDamage(), objectOnTop);
                 }
             }
@@ -622,15 +624,29 @@ public class GamePlayScreen extends Screen {
         }
     }
 
+    private boolean driverPastNewTaxi() {
+        return (driver.getY() < taxi.getY() &&
+                taxi.getY() >= Integer.parseInt(GAME_PROPS.getProperty("window.height")));
+    }
+
+    private boolean driverIsDead() {
+        return (driver.getHealthPoints() <= 0 &&
+                driver.getDriversBlood().getFramesActive() > driver.getDriversBlood().getMaxActiveFrames());
+    }
+
+    private boolean passengerIsDead() {
+        return (minPassengerHealth <= 0 &&
+                passengerBloodFramesActive < driver.getDriversBlood().getMaxActiveFrames());
+    }
+
     public boolean isGameOver() {
         // Game is over if any of the 4 conditions are met
-        boolean isGameOver = (currFrame >= MAX_FRAMES || driver.getHealthPoints() <= 0
-                || minPassengerHealth <= 0);
+        boolean isGameOver = (currFrame >= MAX_FRAMES || driverIsDead() || passengerIsDead() || driverPastNewTaxi());
 
-        if(currFrame >= MAX_FRAMES && !savedData) {
+        if(isGameOver && !savedData) {
             savedData = true;
-            IOUtils.writeLineToFile(GAME_PROPS.getProperty("gameEnd.scoresFile"),
-                    PLAYER_NAME + "," + totalEarnings);
+            String line = PLAYER_NAME + "," + String.format("%.2f", totalEarnings);
+            IOUtils.writeLineToFile(GAME_PROPS.getProperty("gameEnd.scoresFile"), line);
         }
         return isGameOver;
     }
@@ -644,8 +660,8 @@ public class GamePlayScreen extends Screen {
         boolean isLevelCompleted = totalEarnings >= TARGET;
         if(isLevelCompleted && !savedData) {
             savedData = true;
-            IOUtils.writeLineToFile(GAME_PROPS.getProperty("gameEnd.scoresFile"),
-                    PLAYER_NAME + "," + totalEarnings);
+            String line = PLAYER_NAME + "," + String.format("%.2f", totalEarnings);
+            IOUtils.writeLineToFile(GAME_PROPS.getProperty("gameEnd.scoresFile"), line);
         }
         return isLevelCompleted;
     }
