@@ -39,7 +39,6 @@ public class Fireball extends GameEntity {
         IMAGE.draw(this.getX(), this.getY());
     }
 
-    @Override
     public void adjustToInputMovement(Input input) {
         if (input.wasPressed(Keys.UP)) {
             this.setY(this.getY() + this.getScrollSpeedY());
@@ -55,8 +54,6 @@ public class Fireball extends GameEntity {
             adjustToInputMovement(input);
             move();
             draw();
-        } else {
-            return;
         }
     }
 }
