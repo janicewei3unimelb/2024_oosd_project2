@@ -3,6 +3,9 @@ import bagel.*;
 import java.util.ArrayList;
 import java.util.Properties;
 
+/**
+ * Class representing the driver of the game play
+ */
 public class Driver extends DamageableGameEntity {
     private Taxi taxi;
     private final int WALK_SPEED_X;
@@ -17,6 +20,17 @@ public class Driver extends DamageableGameEntity {
     private static final int EJECT_X_MARGIN = 50;
     private final Blood BLOOD;
 
+    /**
+     * Creates a driver instance with relative information
+     *
+     * @param x x-coordinate of the driver
+     * @param y y-coordinate of the driver
+     * @param healthPoints The health points of driver
+     * @param damage The damage points it can impact on other entities
+     * @param move_speed The speed that it should move in the first few frames during the collision timeout
+     * @param radius The radius of the driver
+     * @param gameProps The Game Property where stores essential details information
+     */
     public Driver(int x, int y, double healthPoints, double damage, int move_speed,
                   double radius, Properties gameProps) {
         super(x, y, healthPoints, damage, move_speed, radius, gameProps);
@@ -28,6 +42,9 @@ public class Driver extends DamageableGameEntity {
         BLOOD = new Blood(x, y, gameProps);
     }
 
+    /**
+     * show the image of the driver on its current location
+     */
     @Override
     public void draw() {
         if (!this.getDriverIsInTaxi()) {
@@ -35,6 +52,10 @@ public class Driver extends DamageableGameEntity {
         }
     }
 
+    /**
+     * update on the driver's walking status and location based on user's current input
+     * @param input User's current input
+     */
     @Override
     public void adjustToInputMovement(Input input) {
 
@@ -49,34 +70,60 @@ public class Driver extends DamageableGameEntity {
             this.isWalking = true;
         } else if (input.isDown(Keys.UP)) {
             this.isWalking = true;
-        } else if (!input.wasReleased(Keys.RIGHT) && !input.wasReleased(Keys.LEFT) &&
-                input.wasReleased(Keys.DOWN) && !input.wasReleased(Keys.UP)) {
+        }
+        if (!input.isDown(Keys.RIGHT) && !input.isDown(Keys.LEFT) &&
+                !input.isDown(Keys.DOWN) && !input.isDown(Keys.UP)) {
             this.isWalking = false;
         }
 
     }
 
+    /**
+     * Gets the driver's is walking status
+     * @return true if the driver is walking out of the taxi; otherwise, false
+     */
     public boolean getIsWalking() {
         return this.isWalking;
     }
 
+    /**
+     * Allocates the driver to its active taxi
+     *
+     * @param taxi the active taxi that belongs to the driver
+     */
     public void collectTaxi(Taxi taxi) {
         this.taxi = taxi;
     }
 
+    /**
+     * Updates the driver's health points and other information when it receives damages during a collision
+     *
+     * @param damage The damage points received by the driver
+     * @param onTop true if the enemy is the driver on top when the collision occurred; otherwise, false
+     */
     @Override
     public void takeDamage(double damage, boolean onTop) {
         this.updateHealthPoints(damage);
-        this.setCollisionTimeout(this.getCollisionTimeout() + 1);
+        this.setCollisionTimeoutFrame(this.getCollisionTimeoutFrames() + 1);
         if (this.isDestroyed()) {
             BLOOD.setFramesActive(BLOOD.getFramesActive() + 1);
         }
         this.setCollisionOnTop(onTop);
     }
 
+    /**
+     * Gets the taxi that the driver is currently assigned to
+     *
+     * @return driver's current taxi
+     */
     public Taxi getTaxi() { return this.taxi; }
 
-    public boolean movedToNewTaxi() {
+    /**
+     * returns the result of if the driver is moved closed enough to the taxi to get moved into it
+     *
+     * @return true if the driver is considered to be in the new taxi; otherwise, false
+     */
+    private boolean movedToNewTaxi() {
         int x1 = this.getX();
         int x2 = this.getTaxi().getX();
         int y1 = this.getY();
@@ -85,12 +132,18 @@ public class Driver extends DamageableGameEntity {
         return distance < this.getRadius();
     }
 
+    /**
+     * update the driver based on the user's input and its other information
+     *
+     * @param input User's current input
+     */
     public void update(Input input) {
 
         updateCollisionTimeout();
         setDriverIsInTaxi(this.movedToNewTaxi());
 
-        if(input != null && !this.getDriverIsInTaxi() && this.getCollisionTimeout() <= 0) {
+        // driver is not in the taxi and should move to the new one
+        if(input != null && !this.getDriverIsInTaxi() && this.getCollisionTimeoutFrames() <= 0) {
             adjustToInputMovement(input);
         }
 
@@ -106,6 +159,7 @@ public class Driver extends DamageableGameEntity {
             tp.setPriority(newPriority);
         }
 
+        // move with the taxi when the driver is in the taxi
         if(this.getDriverIsInTaxi()) {
             this.setX(this.taxi.getX());
             this.setY(this.taxi.getY());
@@ -126,6 +180,11 @@ public class Driver extends DamageableGameEntity {
         }
     }
 
+    /**
+     * Sets a trip to the driver
+     *
+     * @param trip The trip assigned to the driver
+     */
     public void setTrip(Trip trip) {
         this.trip = trip;
         if(trip != null) {
@@ -133,14 +192,28 @@ public class Driver extends DamageableGameEntity {
         }
     }
 
+    /**
+     * Gets the current trip of the driver
+     *
+     * @return driver's current trip
+     */
     public Trip getTrip() {
         return this.trip;
     }
 
+    /**
+     * collect coin power for later uses
+     * @param coin The coin being collected
+     */
     public void collectCoinPower(Coin coin) {
         coinPower = coin;
     }
 
+    /**
+     * Gets driver's last trip
+     *
+     * @return driver's last trip
+     */
     public Trip getLastTrip() {
         if(trips.size() <= 0) {
             return null;
@@ -148,6 +221,11 @@ public class Driver extends DamageableGameEntity {
         return trips.get(trips.size() - 1);
     }
 
+    /**
+     * Gets driver's total earnings so far
+     *
+     * @return total earnings so far
+     */
     public double calculateTotalEarnings() {
         double totalEarnings = 0;
         for(Trip trip : trips) {
@@ -158,6 +236,9 @@ public class Driver extends DamageableGameEntity {
         return totalEarnings;
     }
 
+    /**
+     * eject the driver from the taxi by changing its location and altering its is in taxi status
+     */
     public void ejectFromTaxi() {
         if (this.getDriverIsInTaxi()) {
             this.setX(this.taxi.getX() - EJECT_X_MARGIN);
@@ -166,6 +247,10 @@ public class Driver extends DamageableGameEntity {
         this.setDriverIsInTaxi(false);
     }
 
+    /**
+     * Gets the blood of the driver
+     * @return the blood of the driver
+     */
     public Blood getDriversBlood() {
         return this.BLOOD;
     }

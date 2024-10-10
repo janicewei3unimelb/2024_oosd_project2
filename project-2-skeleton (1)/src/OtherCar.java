@@ -2,6 +2,9 @@ import bagel.*;
 import java.util.Properties;
 import java.util.Random;
 
+/**
+ * A class representing an other car that can have collisions with some entities in the game
+ */
 public class OtherCar extends DamageableGameEntity {
     private int speed_y;
     private final Image IMAGE;
@@ -10,6 +13,17 @@ public class OtherCar extends DamageableGameEntity {
     private final Smoke SMOKE;
     private final Fire FIRE;
 
+    /**
+     * Creates a car with given details
+     *
+     * @param x The x-coordinate of the car
+     * @param y The y-coordinate of the car
+     * @param healthPoints The health points of the car
+     * @param damage The damage points it can impact on other entities
+     * @param move_speed The speed that it should move in the first 5 frames during the collision timeout
+     * @param radius The radius of the car
+     * @param gameProps The Game Property where we can fetch essential details
+     */
     public OtherCar(int x, int y, double healthPoints, double damage, int move_speed,
                     double radius, Properties gameProps) {
         super(x, y, healthPoints, damage, move_speed, radius, gameProps);
@@ -22,11 +36,19 @@ public class OtherCar extends DamageableGameEntity {
         FIRE = new Fire(x, y, gameProps);
     }
 
+    /**
+     * Show the image of the car on its current location
+     */
     @Override
     public void draw() {
         IMAGE.draw(this.getX(), this.getY());
     }
 
+    /**
+     * Updates the car's location based on user's input
+     *
+     * @param input User's current input
+     */
     @Override
     public void adjustToInputMovement(Input input) {
         if (input.isDown(Keys.UP)) {
@@ -34,16 +56,16 @@ public class OtherCar extends DamageableGameEntity {
         }
     }
 
+    /**
+     * update the car based on the user's input and other statuses
+     *
+     * @param input User's current input
+     */
     public void update(Input input) {
         updateCollisionTimeout();
         adjustToInputMovement(input);
         if (!this.isDestroyed()) {
-            if (this.getCollisionTimeout() > 0) {
-                this.setCollisionTimeout(this.getCollisionTimeout() + 1);
-                if (this.getCollisionTimeout() < this.getMoveAwayTimeoutframes()) {
-                    showCollisionEffect(this.getCollisionOnTop());
-                }
-            } else {
+            if (this.getCollisionTimeoutFrames() <=0 ) {
                 this.setY(this.getY() - speed_y);
             }
             draw();
@@ -54,6 +76,12 @@ public class OtherCar extends DamageableGameEntity {
         FIRE.update(this.getX(), this.getY());
     }
 
+    /**
+     * Updates the car's health points and other information when it receives damages during a collision
+     *
+     * @param damage The damage points it receives from other objects
+     * @param onTop true if the car is the entity on top when the collision occurred; otherwise, false
+     */
     @Override
     public void takeDamage(double damage, boolean onTop) {
         double prevHealthPoints = this.getHealthPoints();
@@ -62,7 +90,7 @@ public class OtherCar extends DamageableGameEntity {
 
         if (this.getHealthPoints() < prevHealthPoints) {
             // there is a collision effect & reset speed
-            this.setCollisionTimeout(this.getCollisionTimeout() + 1);
+            this.setCollisionTimeoutFrame(this.getCollisionTimeoutFrames() + 1);
             Random rand = new Random();
             this.speed_y = rand.nextInt(RANDOM_RANGE) + RANDOM_SHIFT;
             this.setCollisionOnTop(onTop);

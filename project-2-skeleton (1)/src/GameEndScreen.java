@@ -2,6 +2,9 @@ import bagel.*;
 
 import java.util.*;
 
+/**
+ * A class that represents the game end screen for a win/loss.
+ */
 public class GameEndScreen extends Screen {
 
     private final Image BACKGROUND_IMAGE;
@@ -21,7 +24,12 @@ public class GameEndScreen extends Screen {
 
     private boolean isWon;
 
-
+    /**
+     * Creates a game end screen when the game is won or lost
+     *
+     * @param gameProps Game Property where we can fetch essential information about the components of the game
+     * @param msgProps Message Property where we can fetch information about the texts to be shown
+     */
     public GameEndScreen(Properties gameProps, Properties msgProps) {
 
         BACKGROUND_IMAGE = new Image(gameProps.getProperty("backgroundImage.gameEnd"));
@@ -42,6 +50,10 @@ public class GameEndScreen extends Screen {
         TOP_SCORES = getTopScores();
     }
 
+    /**
+     * Sets the isWon status by the result given
+     * @param isWon the updated result that we want to assign to the isWon status
+     */
     public void setIsWon(boolean isWon) {
         this.isWon = isWon;
     }

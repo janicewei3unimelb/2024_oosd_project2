@@ -5,6 +5,9 @@ import bagel.Keys;
 
 import java.util.Properties;
 
+/**
+ * A class representing a passenger in the game with its relative essential information
+ */
 public class Passenger extends DamageableGameEntity {
     private final int WALK_SPEED_X;
     private final int WALK_SPEED_Y;
@@ -29,6 +32,21 @@ public class Passenger extends DamageableGameEntity {
     private static final int EJECT_X_MARGIN = 100;
     private final Blood BLOOD;
 
+    /**
+     * Creates a passenger instance for the game with its essential information
+     *
+     * @param x The x-coordinate of the passenger
+     * @param y The y-coordinate of the passenger
+     * @param healthPoints The health points of the passenger
+     * @param damage The damage points it can give to other entities
+     * @param move_speed The speed that the passenger moves during the first few frames in the timeout
+     * @param radius The radius of the passenger
+     * @param priority The initial priority of the passenger
+     * @param endX The X coordinates of the destination of the passenger
+     * @param distanceY The vertical distance that the passenger needs to travel for
+     * @param hasUmbrella boolean result of whether the passenger has an umbrella
+     * @param props The game property where stores essential information
+     */
     public Passenger(int x, int y, double healthPoints, double damage, int move_speed,
                      double radius, int priority, int endX, int distanceY, boolean hasUmbrella, Properties props) {
         super(x, y, healthPoints, damage, move_speed, radius, props);
@@ -48,39 +66,65 @@ public class Passenger extends DamageableGameEntity {
         BLOOD = new Blood(x, y, props);
     }
 
+    /**
+     * Gets the result of whether of not the passenger carries an umbrella
+     *
+     * @return true if the passenger has an umbrella; otherwise, false
+     */
     public boolean getHasUmbrella(){
         return this.HAS_UMBRELLA;
     }
 
+    /**
+     * Gets the passenger's corresponding travel plan
+     * @return the passenger's corresponding travel plan
+     */
     public TravelPlan getTravelPlan() {
         return TRAVEL_PLAN;
     }
 
+    /**
+     * Gets the result of if the passenger is in the taxi
+     * @return true if the passenger is in the taxi; otherwise, false
+     */
     public boolean getIsGetInTaxi() {
         return this.isGetInTaxi;
     }
 
-
+    /**
+     * take damage from the other entities and update its information
+     *
+     * @param damage Damage points received
+     * @param onTop true if the passenger is the entity on top when the collision occurred; otherwise, false
+     */
     @Override
     public void takeDamage(double damage, boolean onTop) {
         this.updateHealthPoints(damage);
-        this.setCollisionTimeout(this.getCollisionTimeout() + 1);
+        this.setCollisionTimeoutFrame(this.getCollisionTimeoutFrames() + 1);
         if (this.isDestroyed()) {
             BLOOD.setFramesActive(BLOOD.getFramesActive() + 1);
         }
         this.setCollisionOnTop(onTop);
     }
 
+    /**
+     * show the passenger's image on its current location
+     */
     @Override
     public void draw() {
         IMAGE.draw(this.getX(), this.getY());
     }
 
+    /**
+     * updates the passenger's status and their behaviours
+     * based on user's input and taxi's and driver's statuses
+     *
+     * @param input Current user's input
+     * @param taxi the active taxi in the game
+     * @param driver the driver in the game
+     */
     public void update(Input input, Taxi taxi, Driver driver) {
         updateCollisionTimeout();
-        if (this.trip == driver.getTrip()) {
-            System.out.println("the passenger is in the taxi: " + this.getIsGetInTaxi());
-        }
 
         if(!isGetInTaxi && trip == null) {
             drawPriority();
@@ -99,15 +143,15 @@ public class Passenger extends DamageableGameEntity {
 
         if (!isGetInTaxi && !driver.getDriverIsInTaxi() && trip != null && trip == driver.getTrip()
                 && !trip.isComplete()) {
+            // the previous taxi is damaged
+            // both the driver and the passenger are ejected
             if (input != null) {
                 moveWithDriver(driver);
             }
-            if (getDriverIsInTaxi()) {
-                this.setIsGetInTaxi(true);
-            }
         } else if (!isGetInTaxi && driver.getDriverIsInTaxi() && trip != null && !trip.isComplete() &&
                 trip == driver.getTrip()) {
-            this.setIsGetInTaxi(true);
+            // passenger needs to gets in the taxi when the driver gets in
+            this.setIsGetInTaxi();
         }
 
         if(adjacentToObject(taxi, driver) && !isGetInTaxi && trip == null && getDriverIsInTaxi()) {
@@ -115,26 +159,23 @@ public class Passenger extends DamageableGameEntity {
             // Taxi must be stopped in passenger's vicinity and not having another trip.
             setIsGetInTaxi(taxi);
             move(taxi);
-        } else if(isGetInTaxi && getDriverIsInTaxi()) {
+        } else if(isGetInTaxi) {
             // if the passenger is in the taxi, initiate the trip and move the passenger along with the taxi.
             if(trip == null) {
                 //Create new trip
-                getTravelPlan().setStartY(this.getY());
+                getTravelPlan().setEndY(this.getY());
                 trip = new Trip(this, driver, this.getGameProps());
                 driver.setTrip(trip);
             }
             move(taxi);
-        } else if(!isGetInTaxi && trip != null) {
-            if (trip.isComplete()) {
-                move(taxi);
-                draw();
-            }
+        } else if(!isGetInTaxi && trip != null && trip.isComplete()) {
+            move(taxi);
+            draw();
         }
-
         BLOOD.update(this.getX(), this.getY());
     }
 
-    public void moveWithDriver(Driver driver) {
+    private void moveWithDriver(Driver driver) {
         if (driver.getIsWalking()) {
             this.setX(driver.getX());
             this.setY(driver.getY());
@@ -169,10 +210,8 @@ public class Passenger extends DamageableGameEntity {
             // if the passenger is in the taxi, move the passenger along with the taxi.
             moveWithTaxi(taxi);
         } else if(trip != null && trip.isComplete()) {
-            System.out.println("the trip is finished");
             // walk towards end flag if the trip is completed and not in the taxi.
             if(!hasReachedFlag()) {
-                System.out.println("moving towards the flag)");
                 TripEndFlag tef = trip.getTripEndFlag();
                 walkXDirectionObj(tef.getX());
                 walkYDirectionObj(tef.getY());
@@ -246,6 +285,7 @@ public class Passenger extends DamageableGameEntity {
     /**
      * Check if the taxi is adjacent to the passenger. This is evaluated based on multiple crietria.
      * @param taxi The active taxi in the game play.
+     * @param driver The driver in the game play
      * @return a boolean value indicating if the taxi is adjacent to the passenger.
      */
     private boolean adjacentToObject(Taxi taxi, Driver driver) {
@@ -268,24 +308,38 @@ public class Passenger extends DamageableGameEntity {
      */
     public void setIsGetInTaxi(Taxi taxi) {
         if(taxi == null) {
-            isGetInTaxi = false;
+            this.isGetInTaxi = false;
         } else if(taxi.getX() == this.getX() && taxi.getY() == this.getY()) {
-            isGetInTaxi = true;
+            this.isGetInTaxi = true;
         }
     }
 
-    public void setIsGetInTaxi(boolean result) {
-        this.isGetInTaxi = result;
+    /**
+     * set result to the passenger is get in taxi status to be true
+     */
+    public void setIsGetInTaxi() {
+        this.isGetInTaxi = true;
     }
 
+
+    /**
+     * eject the passenger from the damaged taxi by altering its location and status
+     *
+     * @param taxi The current active taxi in the game
+     */
     public void ejectFromTaxi(Taxi taxi) {
         if (this.isGetInTaxi) {
             this.setX(taxi.getX() - EJECT_X_MARGIN);
             this.setY(taxi.getY());
         }
-        setIsGetInTaxi(false);
+        setIsGetInTaxi(null);
     }
 
+    /**
+     * Gets passenger's blood
+     *
+     * @return Blood of the passenger
+     */
     public Blood getPassengersBlood() {
         return this.BLOOD;
     }

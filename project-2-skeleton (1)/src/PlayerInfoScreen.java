@@ -18,6 +18,12 @@ public class PlayerInfoScreen extends Screen {
     private String playerName;
     private final DrawOptions FONT_STYLE;
 
+    /**
+     * Creates a screen that allow users to input their player name for the game
+     *
+     * @param gameProps Game Property where stores essential information
+     * @param msgProps Message Property where stores essential information
+     */
     public PlayerInfoScreen(Properties gameProps, Properties msgProps) {
 
         BACKGROUND_IMAGE = new Image(gameProps.getProperty("backgroundImage.playerInfo"));
@@ -67,6 +73,11 @@ public class PlayerInfoScreen extends Screen {
         return input.wasPressed(Keys.ENTER);
     }
 
+    /**
+     * Gets the player's name who is playing
+     *
+     * @return player's name
+     */
     public String getPlayerName() {
         return playerName;
     }

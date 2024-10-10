@@ -3,6 +3,9 @@ import bagel.Window;
 
 import java.util.Properties;
 
+/**
+ * A class representing the background of the game play.
+ */
 public class GameBackground {
     private final Image SUNNY_BACKGROUND;
     private final Image RAINY_BACKGROUND;
@@ -12,6 +15,11 @@ public class GameBackground {
     private final int SPEED_Y;
     private static final int MAX_Y = 1152;
 
+    /**
+     * Creates a background to be shown in the game play screen
+     *
+     * @param gameProps Game Property where stores essential information about the components of the game
+     */
     public GameBackground(Properties gameProps) {
         SUNNY_BACKGROUND = new Image(gameProps.getProperty("backgroundImage.sunny"));
         RAINY_BACKGROUND = new Image(gameProps.getProperty("backgroundImage.raining"));
@@ -21,6 +29,11 @@ public class GameBackground {
         SPEED_Y = Integer.parseInt(gameProps.getProperty("gameObjects.taxi.speedY"));
     }
 
+    /**
+     * update the shown background based on the current weather type and if the taxi/driver is moving up
+     * @param weatherType The current weather in the game
+     * @param moveUp true if the up arrow is pressed meaning that the backgrounds should move down; otherwise, false
+     */
     public void updateBackground(String weatherType, boolean moveUp) {
         Image currentBackground = weatherType.equals("RAINING") ? RAINY_BACKGROUND : SUNNY_BACKGROUND;
         if (moveUp) {

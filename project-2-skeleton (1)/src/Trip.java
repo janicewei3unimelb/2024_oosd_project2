@@ -17,6 +17,13 @@ public class Trip {
     private double fee;
     private double penalty;
 
+    /**
+     * Creates a trip associated with a specified passenger and the driver.
+     *
+     * @param passenger The passenger of this trip
+     * @param driver The driver who drives for this trip
+     * @param props The Game Property where we can fetch essential information
+     */
     public Trip(Passenger passenger, Driver driver, Properties props) {
         this.PASSENGER = passenger;
         this.DRIVER= driver;
@@ -26,26 +33,47 @@ public class Trip {
         this.PROPS = props;
     }
 
+    /**
+     * Gets the passenger of a trip
+     *
+     * @return the passenger of the trip
+     */
     public Passenger getPassenger() {
         return PASSENGER;
     }
 
+    /**
+     * Gets the result of whether the trip is finished or not
+     *
+     * @return the result of whether if the trip is finished
+     */
     public boolean isComplete() {
         return isComplete;
     }
 
+    /**
+     * Gets the trip end flag located at the end of the trip
+     *
+     * @return the trip end flag of the trip
+     */
     public TripEndFlag getTripEndFlag() {
         return TRIP_END_FLAG;
     }
 
+    /**
+     * Gets the fee of the trip
+     *
+     * @return the fee of the trip
+     */
     public double getFee() {
         return fee;
     }
 
-    public int getExpectedFee() {
-        return PASSENGER.getTravelPlan().getPriority();
-    }
-
+    /**
+     * Gets the resulted penalty of the trip
+     *
+     * @return the penalty of the trip
+     */
     public double getPenalty() {
         return penalty;
     }
@@ -71,7 +99,7 @@ public class Trip {
      * Check if the passenger has passed the drop-off point.
      * @return true if the passenger has passed the drop-off point, false otherwise.
      */
-    private boolean hasPassedDropOff() {
+    public boolean hasPassedDropOff() {
         return PASSENGER.getY() < TRIP_END_FLAG.getY() && getCurrentDistance() > TRIP_END_FLAG.getRadius();
     }
 
@@ -89,7 +117,7 @@ public class Trip {
      */
     public void end() {
         isComplete = true;
-        PASSENGER.setIsGetInTaxi(false);
+        PASSENGER.setIsGetInTaxi(null);
         DRIVER.setTrip(null);
         calculateFee();
     }

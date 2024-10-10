@@ -16,6 +16,12 @@ import java.util.Properties;
     private PlayerInfoScreen playerInfoScreen;
     private GameEndScreen gameEndScreen;
 
+    /**
+     *  Creates a ShadowTaxi game based on the information given in the Game Property and Message Property Files
+     *
+     * @param gameProps
+     * @param messageProps
+     */
     public ShadowTaxi(Properties gameProps, Properties messageProps) {
         super(Integer.parseInt(gameProps.getProperty("window.width")),
                 Integer.parseInt(gameProps.getProperty("window.height")),
@@ -70,6 +76,11 @@ import java.util.Properties;
 
     }
 
+    /**
+     * This is the main method which implements the shadow taxi game
+     *
+     * @param args User's input in the command line
+     */
     public static void main(String[] args) {
         Properties game_props = IOUtils.readPropertiesFile("res/app.properties");
         Properties message_props = IOUtils.readPropertiesFile("res/message_en.properties");
