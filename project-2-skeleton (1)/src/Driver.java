@@ -12,8 +12,10 @@ public class Driver extends DamageableGameEntity {
     private Coin coinPower;
     private Trip trip;
     private ArrayList<Trip> trips;
+    private boolean isWalking = false;
 
     private static final int EJECT_X_MARGIN = 50;
+    private final Blood BLOOD;
 
     public Driver(int x, int y, double healthPoints, double damage, int move_speed,
                   double radius, Properties gameProps) {
@@ -23,6 +25,7 @@ public class Driver extends DamageableGameEntity {
         IMAGE = new Image(gameProps.getProperty("gameObjects.driver.image"));
 
         trips = new ArrayList<Trip>();
+        BLOOD = new Blood(x, y, gameProps);
     }
 
     @Override
@@ -37,12 +40,24 @@ public class Driver extends DamageableGameEntity {
 
         if (input.isDown(Keys.RIGHT)) {
             this.setX(this.getX() + WALK_SPEED_X);
+            this.isWalking = true;
         } else if (input.isDown(Keys.LEFT)) {
             this.setX(this.getX() - WALK_SPEED_X);
+            this.isWalking = true;
         } else if (input.isDown(Keys.DOWN)) {
             this.setY(this.getY() + WALK_SPEED_Y);
+            this.isWalking = true;
+        } else if (input.isDown(Keys.UP)) {
+            this.isWalking = true;
+        } else if (!input.wasReleased(Keys.RIGHT) && !input.wasReleased(Keys.LEFT) &&
+                input.wasReleased(Keys.DOWN) && !input.wasReleased(Keys.UP)) {
+            this.isWalking = false;
         }
 
+    }
+
+    public boolean getIsWalking() {
+        return this.isWalking;
     }
 
     public void collectTaxi(Taxi taxi) {
@@ -53,6 +68,9 @@ public class Driver extends DamageableGameEntity {
     public void takeDamage(double damage, boolean onTop) {
         this.updateHealthPoints(damage);
         this.setCollisionTimeout(this.getCollisionTimeout() + 1);
+        if (this.isDestroyed()) {
+            BLOOD.setFramesActive(BLOOD.getFramesActive() + 1);
+        }
         this.setCollisionOnTop(onTop);
     }
 
@@ -69,16 +87,7 @@ public class Driver extends DamageableGameEntity {
 
     public void update(Input input) {
 
-        if (this.getCollisionTimeout() >= this.getMaxTimeoutframes()) {
-            this.setCollisionTimeout(0);
-        }
-        if (this.getCollisionTimeout() > 0) {
-            this.setCollisionTimeout(this.getCollisionTimeout() + 1);
-            if (this.getCollisionTimeout() < this.getMoveAwayTimeoutframes()) {
-                showCollisionEffect(this.getCollisionOnTop());
-            }
-        }
-
+        updateCollisionTimeout();
         setDriverIsInTaxi(this.movedToNewTaxi());
 
         if(input != null && !this.getDriverIsInTaxi() && this.getCollisionTimeout() <= 0) {
@@ -105,8 +114,8 @@ public class Driver extends DamageableGameEntity {
         if(trip != null && trip.hasReachedEnd()) {
             getTrip().end();
         }
-
-        this.draw();
+        BLOOD.update(this.getX(), this.getY());
+        draw();
 
         // the flag of the current trip renders to the screen
         if(trips.size() > 0) {
@@ -151,12 +160,14 @@ public class Driver extends DamageableGameEntity {
 
     public void ejectFromTaxi() {
         if (this.getDriverIsInTaxi()) {
-            System.out.println("ejected!");
             this.setX(this.taxi.getX() - EJECT_X_MARGIN);
             this.setY(this.taxi.getY());
         }
         this.setDriverIsInTaxi(false);
+    }
 
+    public Blood getDriversBlood() {
+        return this.BLOOD;
     }
 
 }

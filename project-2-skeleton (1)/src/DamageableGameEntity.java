@@ -1,9 +1,8 @@
+import bagel.Input;
+
 import java.util.Properties;
 
 public abstract class DamageableGameEntity extends GameEntity {
-    private Fire fire;
-    private Smoke smoke;
-    private Blood blood;
 
     private static final int HEALTH_UNIT = 100;
     private static final int MAX_TIMEOUTFRAMES = 200;
@@ -28,6 +27,20 @@ public abstract class DamageableGameEntity extends GameEntity {
             this.setY(this.getY() - this.getMoveAwaySpeed());
         } else {
             this.setY(this.getY() + this.getMoveAwaySpeed());
+        }
+    }
+
+    public abstract void adjustToInputMovement(Input input);
+
+    public void updateCollisionTimeout() {
+        if (this.getCollisionTimeout() > this.getMaxTimeoutframes()) {
+            this.setCollisionTimeout(0);
+        }
+        if (this.getCollisionTimeout() > 0) {
+            this.setCollisionTimeout(this.getCollisionTimeout() + 1);
+            if (this.getCollisionTimeout() < this.getMoveAwayTimeoutframes()) {
+                showCollisionEffect(this.getCollisionOnTop());
+            }
         }
     }
 

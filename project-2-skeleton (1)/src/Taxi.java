@@ -1,5 +1,4 @@
 import bagel.*;
-
 import java.util.Properties;
 
 public class Taxi extends DamageableGameEntity {
@@ -13,6 +12,8 @@ public class Taxi extends DamageableGameEntity {
     private boolean isMovingX;
 
     private Driver driver;
+    private final Smoke SMOKE;
+    private final Fire FIRE;
 
     public Taxi(int x, int y, double healthPoints, double damage, int timeout_move_speed,
                 double radius, Properties gameProps) {
@@ -21,7 +22,8 @@ public class Taxi extends DamageableGameEntity {
         this.DAMAGEDIMAGE = new Image(gameProps.getProperty("gameObjects.taxi.damagedImage"));
 
         this.SPEEDX = Integer.parseInt(gameProps.getProperty("gameObjects.taxi.speedX"));
-
+        SMOKE = new Smoke(x, y, gameProps);
+        FIRE = new Fire(x, y, gameProps);
     }
 
     public Driver getDriver() {
@@ -50,12 +52,7 @@ public class Taxi extends DamageableGameEntity {
     }
 
     public void update(Input input) {
-        if (this.getCollisionTimeout() >= this.getMaxTimeoutframes()) {
-            this.setCollisionTimeout(0);
-        }
-        if (this.getCollisionTimeout() > 0) {
-            this.setCollisionTimeout(this.getCollisionTimeout() + 1);
-        }
+        updateCollisionTimeout();
 
         if (this.isDestroyed()) {
             moveAway(input);
@@ -67,6 +64,11 @@ public class Taxi extends DamageableGameEntity {
         } else if (!this.isDestroyed() && !this.getDriver().getDriverIsInTaxi()) {
             moveAway(input);
         }
+        if (this.isDestroyed()) {
+            FIRE.setFramesActive(FIRE.getFramesActive() + 1);
+        }
+        SMOKE.update(this.getX(), this.getY());
+        FIRE.update(this.getX(), this.getY());
         this.draw();
     }
 
@@ -79,6 +81,7 @@ public class Taxi extends DamageableGameEntity {
     @Override
     public void takeDamage(double damage, boolean onTop) {
         updateHealthPoints(damage);
+        SMOKE.setFramesActive(SMOKE.getFramesActive() + 1);
         this.setCollisionTimeout(this.getCollisionTimeout() + 1);
         this.setCollisionOnTop(onTop);
     }

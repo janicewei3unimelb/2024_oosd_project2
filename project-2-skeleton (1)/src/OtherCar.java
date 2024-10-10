@@ -7,7 +7,8 @@ public class OtherCar extends DamageableGameEntity {
     private final Image IMAGE;
     private static final int RANDOM_RANGE = 3;
     private static final int RANDOM_SHIFT = 2;
-
+    private final Smoke SMOKE;
+    private final Fire FIRE;
 
     public OtherCar(int x, int y, double healthPoints, double damage, int move_speed,
                     double radius, Properties gameProps) {
@@ -17,6 +18,8 @@ public class OtherCar extends DamageableGameEntity {
         String imagePath = String.format(gameProps.getProperty("gameObjects.otherCar.image"),
                 rand.nextInt(2) + 1);
         IMAGE = new Image(imagePath);
+        SMOKE = new Smoke(x, y, gameProps);
+        FIRE = new Fire(x, y, gameProps);
     }
 
     @Override
@@ -32,9 +35,8 @@ public class OtherCar extends DamageableGameEntity {
     }
 
     public void update(Input input) {
-        if (this.getCollisionTimeout() >= getMaxTimeoutframes()) {
-            this.setCollisionTimeout(0);
-        }
+        updateCollisionTimeout();
+        adjustToInputMovement(input);
         if (!this.isDestroyed()) {
             if (this.getCollisionTimeout() > 0) {
                 this.setCollisionTimeout(this.getCollisionTimeout() + 1);
@@ -44,17 +46,19 @@ public class OtherCar extends DamageableGameEntity {
             } else {
                 this.setY(this.getY() - speed_y);
             }
-            adjustToInputMovement(input);
             draw();
         } else {
-            return;
+            FIRE.setFramesActive(FIRE.getFramesActive() + 1);
         }
+        SMOKE.update(this.getX(), this.getY());
+        FIRE.update(this.getX(), this.getY());
     }
 
     @Override
     public void takeDamage(double damage, boolean onTop) {
         double prevHealthPoints = this.getHealthPoints();
         updateHealthPoints(damage);
+        SMOKE.setFramesActive(SMOKE.getFramesActive() + 1);
 
         if (this.getHealthPoints() < prevHealthPoints) {
             // there is a collision effect & reset speed

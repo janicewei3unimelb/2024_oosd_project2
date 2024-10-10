@@ -11,6 +11,8 @@ public class EnemyCar extends DamageableGameEntity {
     private final List<Fireball> FIREBALLS;
     private static final int FIREBALL_DIVISIBILITY = 300;
     private static final int RANDOM_BOUND = 1000;
+    private final Smoke SMOKE;
+    private final Fire FIRE;
 
     public EnemyCar(int x, int y, double healthPoints, double damage, int timeout_move_speed,
                     double radius, Properties gameProps) {
@@ -19,12 +21,15 @@ public class EnemyCar extends DamageableGameEntity {
         speed_y = rand.nextInt(4) + 2;
         IMAGE = new Image(gameProps.getProperty("gameObjects.enemyCar.image"));
         FIREBALLS = new ArrayList<>();
+        SMOKE = new Smoke(x, y, gameProps);
+        FIRE = new Fire(x, y, gameProps);
     }
 
     @Override
     public void takeDamage(double damage, boolean onTop) {
         double prevHealthPoints = this.getHealthPoints();
         updateHealthPoints(damage);
+        SMOKE.setFramesActive(SMOKE.getFramesActive() + 1);
 
         if (this.getHealthPoints() < prevHealthPoints) {
             // there is a collision effect
@@ -46,9 +51,8 @@ public class EnemyCar extends DamageableGameEntity {
     }
 
     public void update(Input input) {
-        if (this.getCollisionTimeout() >= getMaxTimeoutframes()) {
-            this.setCollisionTimeout(0);
-        }
+        updateCollisionTimeout();
+        adjustToInputMovement(input);
         if (!this.isDestroyed()) {
             generateRandomFireballs();
             if (this.getCollisionTimeout() > 0) {
@@ -59,11 +63,12 @@ public class EnemyCar extends DamageableGameEntity {
             } else {
                 this.setY(this.getY() - speed_y);
             }
-            adjustToInputMovement(input);
             draw();
         } else {
-            return;
+            FIRE.setFramesActive(FIRE.getFramesActive() + 1);
         }
+        SMOKE.update(this.getX(), this.getY());
+        FIRE.update(this.getX(), this.getY());
     }
 
     public void generateRandomFireballs() {
