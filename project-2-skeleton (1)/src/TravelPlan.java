@@ -31,10 +31,6 @@ public class TravelPlan {
         return initPriority;
     }
 
-    public int getDistanceY() {
-        return DISTANCE_Y;
-    }
-
     public int getEndY() {
         return endY;
     }
@@ -45,10 +41,6 @@ public class TravelPlan {
 
     public void setPriority(int priority) {
         this.currentPriority = priority;
-    }
-
-    public void setInitPriority(int priority) {
-        this.initPriority = priority;
     }
 
     public void setCoinPowerApplied() {
@@ -66,7 +58,7 @@ public class TravelPlan {
     public double getExpectedFee() {
         double ratePerY = Double.parseDouble(PROPS.getProperty("trip.rate.perY"));
         double travelPlanDistanceFee = ratePerY * DISTANCE_Y;
-        double travelPlanPriorityFee = currentPriority * Double.parseDouble(
+        double travelPlanPriorityFee = Double.parseDouble(
                 PROPS.getProperty(String.format("trip.rate.priority%d", currentPriority)));
 
         return travelPlanDistanceFee + travelPlanPriorityFee;
