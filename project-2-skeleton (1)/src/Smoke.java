@@ -13,7 +13,7 @@ public class Smoke extends DamageEffect {
      *
      * @param x The x-coordinate of the smoke
      * @param y The y-coordinate of the smoke
-     * @param gameProps The Game Property where we can fetch essential information
+     * @param gameProps The Game Property where stores essential information
      */
     public Smoke(int x, int y, Properties gameProps) {
         super(x, y, gameProps);

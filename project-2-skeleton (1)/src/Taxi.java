@@ -27,7 +27,7 @@ public class Taxi extends DamageableGameEntity {
      * @param damage The damage points it can impact on other entities
      * @param timeout_move_speed The speed that it should move in the first few frames during the collision timeout
      * @param radius The radius of the taxi
-     * @param gameProps The Game Property where you can fetch essential details information
+     * @param gameProps The Game Property where stores essential details information
      */
     public Taxi(int x, int y, double healthPoints, double damage, int timeout_move_speed,
                 double radius, Properties gameProps) {

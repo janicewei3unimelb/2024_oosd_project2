@@ -19,7 +19,7 @@ public class PlayerInfoScreen extends Screen {
     private final DrawOptions FONT_STYLE;
 
     /**
-     * Creates a screen that allow users to input their player name for the game
+     * Creates a screen that allows users to input their player name for the game
      *
      * @param gameProps Game Property where stores essential information
      * @param msgProps Message Property where stores essential information

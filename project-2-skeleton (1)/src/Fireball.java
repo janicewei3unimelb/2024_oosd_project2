@@ -16,7 +16,7 @@ public class Fireball extends GameEntity {
      *
      * @param x x-coordinate of the fireball
      * @param y y-coordinate of the fireball
-     * @param gameProps The Game Property where you can fetch essential details information
+     * @param gameProps The Game Property where stores essential details information
      */
     public Fireball(int x, int y, Properties gameProps) {
         super(x, y, gameProps);

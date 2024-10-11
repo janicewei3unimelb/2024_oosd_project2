@@ -79,8 +79,8 @@ public class GamePlayScreen extends Screen {
     /**
      * Creates a game play screen with required information and name of player who is playing
      *
-     * @param gameProps Game Property where we can fetch essential information about the components of the game
-     * @param msgProps Message Property where we can fetch information about the texts to be shown
+     * @param gameProps Game Property where stores essential information about the components of the game
+     * @param msgProps Message Property where stores information about the texts to be shown
      * @param playerName Current Player's name
      */
     public GamePlayScreen(Properties gameProps, Properties msgProps, String playerName) {
@@ -559,7 +559,8 @@ public class GamePlayScreen extends Screen {
                     Double.parseDouble(GAME_PROPS.getProperty("gameObjects.otherCar.damage"));
             radius = Double.parseDouble(GAME_PROPS.getProperty("gameObjects.otherCar.radius"));
             CARS.add(new OtherCar(x, y, healthPoints, damage, VEHICLE_TIMEOUT_SPEED, radius, GAME_PROPS));
-        } else if (randomNumEnemy % ENEMY_DIVISIBILITY == 0) {
+        }
+        if (randomNumEnemy % ENEMY_DIVISIBILITY == 0) {
             healthPoints = DamageableGameEntity.getHealthUnit() *
                     Double.parseDouble(GAME_PROPS.getProperty("gameObjects.enemyCar.health"));
             damage = DamageableGameEntity.getHealthUnit() *
@@ -590,6 +591,7 @@ public class GamePlayScreen extends Screen {
         INFO_FONT.drawString(MSG_PROPS.getProperty("gamePlay.driverHealth") + driver.getHealthPoints(),
                 DRIVER_HEALTH_X, DRIVER_HEALTH_Y);
 
+        // show trip info
         Trip lastTrip = driver.getLastTrip();
         if(lastTrip != null) {
             if(lastTrip.isComplete()) {
@@ -650,7 +652,7 @@ public class GamePlayScreen extends Screen {
 
     private boolean passengerIsDead() {
         return (minPassengerHealth <= 0 &&
-                passengerBloodFramesActive < driver.getDriversBlood().getMaxActiveFrames());
+                passengerBloodFramesActive > driver.getDriversBlood().getMaxActiveFrames());
     }
 
     /**

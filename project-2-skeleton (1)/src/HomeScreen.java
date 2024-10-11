@@ -18,8 +18,8 @@ public class HomeScreen extends Screen {
     /**
      * Creates a home screen instance based on the information given in the property files
      *
-     * @param gameProps Game Property where we can fetch essential features information
-     * @param msgProps Message Property where we can fetch information about the texts to be shown
+     * @param gameProps Game Property where stores essential features information
+     * @param msgProps Message Property where stores information about the texts to be shown
      */
     public HomeScreen(Properties gameProps, Properties msgProps) {
         BACKGROUND_IMAGE = new Image(gameProps.getProperty("backgroundImage.home"));

@@ -8,7 +8,7 @@ public class Weather {
     private final int END_FRAME;
 
     /**
-     * Creates a new instance of weather of the weather class. It represents a type of weather
+     * Creates a new instance of weather. It represents a type of weather
      * during a specified period of time in the game.
      *
      * @param type This is the weather type (sunny or rainy)

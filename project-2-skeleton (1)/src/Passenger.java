@@ -67,7 +67,7 @@ public class Passenger extends DamageableGameEntity {
     }
 
     /**
-     * Gets the result of whether of not the passenger carries an umbrella
+     * Gets the result of whether the passenger carries an umbrella or not
      *
      * @return true if the passenger has an umbrella; otherwise, false
      */
@@ -269,7 +269,7 @@ public class Passenger extends DamageableGameEntity {
 
     /**
      * Check if the passenger has reached the end flag of the trip.
-     * @return a boolean value indicating if the passenger has reached the end flag.
+     * @return true if the passenger has reached the end flag; otherwise, false
      */
     public boolean hasReachedFlag() {
         if(trip != null) {
@@ -286,7 +286,7 @@ public class Passenger extends DamageableGameEntity {
      * Check if the taxi is adjacent to the passenger. This is evaluated based on multiple crietria.
      * @param taxi The active taxi in the game play.
      * @param driver The driver in the game play
-     * @return a boolean value indicating if the taxi is adjacent to the passenger.
+     * @return true if the taxi is adjacent to the passenger; otherwise, false
      */
     private boolean adjacentToObject(Taxi taxi, Driver driver) {
         // Check if Taxi is stopped and health > 0
@@ -301,8 +301,8 @@ public class Passenger extends DamageableGameEntity {
     }
 
     /**
-     * Set the get in taxi status of the people object.
-     * This is used to set an indication to check whether the people object is in the taxi or not.
+     * Set the get in taxi status of the passenger
+     * This is used to set an indication to check whether the passenger is in the taxi or not.
      * @param taxi The taxi object to be checked. If it is null, the people object is not in a taxi at the moment in
      *             the game play.
      */

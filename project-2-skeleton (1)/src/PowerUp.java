@@ -20,7 +20,7 @@ public abstract class PowerUp extends GameEntity {
      * @param y The y-coordinate of the power up entity
      * @param radius The radius of the entity
      * @param duration The duration of the power up's active frames
-     * @param gameProps The Game Property where we can fetch essential information
+     * @param gameProps The Game Property where stores essential information
      */
     public PowerUp(int x, int y, double radius, int duration, Properties gameProps) {
         super(x, y, gameProps);
@@ -47,7 +47,7 @@ public abstract class PowerUp extends GameEntity {
     /**
      * Returns the result of whether the instance has collided with the taxi
      *
-     * @param taxi Taxi in the game
+     * @param taxi active taxi in the game
      * @return true if it has collided with the taxi; otherwise, false
      */
     public boolean hasCollidedWith(Taxi taxi) {

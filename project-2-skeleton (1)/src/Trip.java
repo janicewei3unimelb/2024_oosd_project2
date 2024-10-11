@@ -22,7 +22,7 @@ public class Trip {
      *
      * @param passenger The passenger of this trip
      * @param driver The driver who drives for this trip
-     * @param props The Game Property where we can fetch essential information
+     * @param props The Game Property where stores essential information
      */
     public Trip(Passenger passenger, Driver driver, Properties props) {
         this.PASSENGER = passenger;
@@ -45,7 +45,7 @@ public class Trip {
     /**
      * Gets the result of whether the trip is finished or not
      *
-     * @return the result of whether if the trip is finished
+     * @return true if the trip is finished; otherwise, false
      */
     public boolean isComplete() {
         return isComplete;

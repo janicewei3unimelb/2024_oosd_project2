@@ -28,7 +28,7 @@ public class GameEndScreen extends Screen {
      * Creates a game end screen when the game is won or lost
      *
      * @param gameProps Game Property where we can fetch essential information about the components of the game
-     * @param msgProps Message Property where we can fetch information about the texts to be shown
+     * @param msgProps Message Property where stores information about the texts to be shown
      */
     public GameEndScreen(Properties gameProps, Properties msgProps) {
 

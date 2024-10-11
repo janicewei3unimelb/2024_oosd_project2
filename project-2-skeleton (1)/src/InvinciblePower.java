@@ -15,7 +15,7 @@ public class InvinciblePower extends PowerUp {
      * @param y y-coordinate of the power
      * @param radius radius of the power for detecting collisions
      * @param duration duration of its effect
-     * @param gameProps Game property where we can fetch essential information
+     * @param gameProps Game property where stores essential information
      */
     public InvinciblePower(int x, int y, double radius, int duration, Properties gameProps) {
         super(x, y, radius, duration, gameProps);

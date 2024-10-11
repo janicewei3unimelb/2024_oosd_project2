@@ -19,8 +19,8 @@ import java.util.Properties;
     /**
      *  Creates a ShadowTaxi game based on the information given in the Game Property and Message Property Files
      *
-     * @param gameProps
-     * @param messageProps
+     * @param gameProps The Game Property where stores essential information about components in the game
+     * @param messageProps The Message Property where stores information about texts to be shown
      */
     public ShadowTaxi(Properties gameProps, Properties messageProps) {
         super(Integer.parseInt(gameProps.getProperty("window.width")),

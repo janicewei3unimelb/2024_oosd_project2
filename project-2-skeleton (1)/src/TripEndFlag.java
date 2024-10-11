@@ -20,7 +20,7 @@ public class TripEndFlag extends GameEntity {
      *
      * @param x The x-coordinate of the trip end flag
      * @param y The y-coordinate of the trip end flag
-     * @param props The Game Property where we can fetch essential information
+     * @param props The Game Property where stores essential information
      */
     public TripEndFlag(int x, int y, Properties props) {
         super(x, y, props);
@@ -65,7 +65,7 @@ public class TripEndFlag extends GameEntity {
     }
 
     /**
-     * respond to users' input
+     * respond to users' input to implement movements on the vertical direction
      */
     private void adjustToInputMovement(Input input) {
         if (input.wasPressed(Keys.UP)) {
